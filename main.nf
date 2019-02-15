@@ -143,6 +143,12 @@ if (params.pico){
     unstranded = false
 }
 
+if( params.salmon_index ){
+    salmon_index = Channel
+        .fromPath(params.salmon_index)
+        .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
+}
+
 // Validate inputs
 if (params.aligner != 'star' && params.aligner != 'hisat2'){
     exit 1, "Invalid aligner option: ${params.aligner}. Valid options: 'star', 'hisat2'"
@@ -151,11 +157,6 @@ if( params.star_index && params.aligner == 'star' ){
     star_index = Channel
         .fromPath(params.star_index)
         .ifEmpty { exit 1, "STAR index not found: ${params.star_index}" }
-}
-if( params.salmon_index ){
-    salmon_index = Channel
-        .fromPath(params.salmon_index)
-        .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
 }
 else if ( params.hisat2_index && params.aligner == 'hisat2' ){
     hs2_indices = Channel
@@ -723,6 +724,7 @@ if(params.salmon_index){
             """
         }
     }
+}
 
 /*
  * STEP 4 - RSeQC analysis
