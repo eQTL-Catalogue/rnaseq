@@ -152,6 +152,11 @@ if( params.star_index && params.aligner == 'star' ){
         .fromPath(params.star_index)
         .ifEmpty { exit 1, "STAR index not found: ${params.star_index}" }
 }
+if( params.salmon_index ){
+    salmon_index = Channel
+        .fromPath(params.salmon_index)
+        .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
+}
 else if ( params.hisat2_index && params.aligner == 'hisat2' ){
     hs2_indices = Channel
         .fromPath("${params.hisat2_index}*")
@@ -484,7 +489,7 @@ process trim_galore {
     file wherearemyfiles from ch_where_trim_galore.collect()
 
     output:
-    file "*fq.gz" into trimmed_reads
+    file "*fq.gz" into trimmed_reads, trimmed_reads_salmon
     file "*trimming_report.txt" into trimgalore_results
     file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
     file "where_are_my_files.txt"
@@ -679,6 +684,45 @@ if(params.aligner == 'hisat2'){
         """
     }
 }
+
+/*
+ * STEP 3B - quant transcripts with Salmon
+ */
+if(params.salmon_index){
+    process salmon_quant {
+        tag "$prefix"
+        publishDir "${params.outdir}/Salmon", mode: 'copy'
+
+        input:
+        file reads from trimmed_reads_salmon
+        file index from salmon_index.collect()
+
+        output:
+        file "${prefix}"
+        
+        script:
+        prefix = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+        if (params.singleEnd) {
+            """
+            salmon quant --seqBias --useVBOpt --gcBias \\
+                         --libType SR \\
+                         --index ${index} \\
+                         -r ${reads[0]} \\
+                         -p ${task.cpus} \\
+                         -o ${prefix}
+            """
+        } else {
+            """
+            salmon quant --seqBias --useVBOpt --gcBias \\
+                         --libType ISR \\
+                         --index $index \\
+                         -1 ${reads[0]} \\
+                         -2 ${reads[1]} \\
+                         -p ${task.cpus} \\
+                         -o ${prefix}
+            """
+        }
+    }
 
 /*
  * STEP 4 - RSeQC analysis
