@@ -218,29 +218,25 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 /*
  * Create a channel for input read files
  */
-if(params.readPathsFile){
+readPaths = params.readPaths
+if(params.readPathsFile && !readPaths){
     def file = new File(params.readPathsFile)
     if (!file.exists()) { exit 1, "params.readPathsFile does not exist or is unreachable" }
     if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
 
-    def sample_entries = []
-    file.eachLine { row -> sample_entries << row }
-    
-    Channel
-        .from(sample_entry)
-        .ifEmpty { exit 1, "params.readPathsFile was empty - no input files supplied" }
-        .into { raw_reads_fastqc; raw_reads_trimgalore }    
-} else 
-if(params.readPaths){
+    def readPaths = []
+    file.eachLine { row -> readPaths << Eval.me(row) }
+} 
+if(readPaths){
     if(params.singleEnd){
         Channel
-            .from(params.readPaths)
+            .from(readPaths)
             .map { row -> [ row[0], [file(row[1][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
             .into { raw_reads_fastqc; raw_reads_trimgalore }
     } else {
         Channel
-            .from(params.readPaths)
+            .from(readPaths)
             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
             .into { raw_reads_fastqc; raw_reads_trimgalore }
