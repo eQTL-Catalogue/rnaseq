@@ -218,6 +218,19 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 /*
  * Create a channel for input read files
  */
+if(params.readPathsFile){
+    def file = new File(params.readPathsFile)
+    if (!file.exists()) { exit 1, "params.readPathsFile does not exist or is unreachable" }
+    if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
+
+    def sample_entries = []
+    file.eachLine { row -> sample_entries << row }
+    
+    Channel
+        .from(sample_entry)
+        .ifEmpty { exit 1, "params.readPathsFile was empty - no input files supplied" }
+        .into { raw_reads_fastqc; raw_reads_trimgalore }    
+} else 
 if(params.readPaths){
     if(params.singleEnd){
         Channel
