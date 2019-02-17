@@ -218,15 +218,14 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 /*
  * Create a channel for input read files
  */
-readPaths = params.readPaths
-if(params.readPathsFile && !readPaths){
+def readPaths = params.readPaths ?: []
+if(params.readPathsFile && !params.readPaths){
     def file = new File(params.readPathsFile)
     if (!file.exists()) { exit 1, "params.readPathsFile does not exist or is unreachable" }
     if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
 
-    def readPaths = []
-    file.eachLine { row -> readPaths << Eval.me(row) }
-} 
+    file.splitEachLine("\t") {row -> readPaths.add( [row[0], [ row[1], row[2] ]] ) }
+}
 if(readPaths){
     if(params.singleEnd){
         Channel
