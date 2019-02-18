@@ -143,18 +143,6 @@ if (params.pico){
     unstranded = false
 }
 
-if( !params.skip_tx_exp_quant ){
-    if( params.salmon_index ){
-        salmon_index = Channel
-            .fromPath(params.salmon_index)
-            .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
-    } 
-    else if (params.tx_fasta){
-        tx_fasta = Channel
-            .fromPath(params.tx_fasta)
-            .ifEmpty { exit 1, "Transcript fasta not found: ${params.tx_fasta}" }
-    }
-}
 
 // Validate inputs
 if (params.aligner != 'star' && params.aligner != 'hisat2'){
@@ -423,21 +411,19 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
 /*
  * PREPROCESSING - Build Salmon index
  */
-if(!params.skip_tx_exp_quant && !params.salmon_index && params.tx_fasta){
+if(!params.skip_tx_exp_quant ){
     process makeSalmonIndex {
-        tag "$fasta"
+        tag "${params.tx_fasta_ftp.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/salmon_index" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
-        input:
-        file fasta from tx_fasta
-
         output:
-        file "${fasta.baseName}" into salmon_index
+        file "${params.tx_fasta_ftp.baseName}.index" into salmon_index
         
         script:
         """
-        salmon index -t $fasta -i ${fasta.baseName}
+        wget -O - ${params.tx_fasta_ftp} | gunzip -c > ${params.tx_fasta_ftp.baseName}
+        salmon index -t ${params.tx_fasta_ftp.baseName} -i ${params.tx_fasta_ftp.baseName}.index
         """
     }
 }
