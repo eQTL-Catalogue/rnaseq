@@ -143,10 +143,17 @@ if (params.pico){
     unstranded = false
 }
 
-if( params.salmon_index ){
-    salmon_index = Channel
-        .fromPath(params.salmon_index)
-        .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
+if( !params.skip_tx_exp_quant ){
+    if( params.salmon_index ){
+        salmon_index = Channel
+            .fromPath(params.salmon_index)
+            .ifEmpty { exit 1, "Salmon index not found: ${params.salmon_index}" }
+    } 
+    else if (params.tx_fasta){
+        tx_fasta = Channel
+            .fromPath(params.tx_fasta)
+            .ifEmpty { exit 1, "Transcript fasta not found: ${params.tx_fasta}" }
+    }
 }
 
 // Validate inputs
@@ -412,6 +419,29 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
         """
     }
 }
+
+/*
+ * PREPROCESSING - Build Salmon index
+ */
+if(!params.skip_tx_exp_quant && !params.salmon_index && params.tx_fasta){
+    process makeSalmonIndex {
+        tag "$fasta"
+        publishDir path: { params.saveReference ? "${params.outdir}/salmon_index" : params.outdir },
+                   saveAs: { params.saveReference ? it : null }, mode: 'copy'
+
+        input:
+        file fasta from tx_fasta
+
+        output:
+        file "${fasta.baseName}" into salmon_index
+        
+        script:
+        """
+        salmon index -t $fasta -i ${fasta.baseName}
+        """
+    }
+}
+
 /*
  * PREPROCESSING - Convert GFF3 to GTF
  */
@@ -498,7 +528,8 @@ process trim_galore {
     file wherearemyfiles from ch_where_trim_galore.collect()
 
     output:
-    file "*fq.gz" into trimmed_reads, trimmed_reads_salmon
+    file "*fq.gz" into trimmed_reads
+    set val(name), file("*fq.gz") into trimmed_reads_salmon
     file "*trimming_report.txt" into trimgalore_results
     file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
     file "where_are_my_files.txt"
@@ -694,23 +725,23 @@ if(params.aligner == 'hisat2'){
     }
 }
 
+
 /*
- * STEP 3B - quant transcripts with Salmon
+ * STEP 3Salmon.1 - quant transcripts with Salmon
  */
-if(params.salmon_index){
+if(!params.skip_tx_exp_quant){
     process salmon_quant {
-        tag "$prefix"
+        tag "$name"
         publishDir "${params.outdir}/Salmon", mode: 'copy'
 
         input:
-        file reads from trimmed_reads_salmon
+        set name, file(reads) from trimmed_reads_salmon
         file index from salmon_index.collect()
 
         output:
-        file "${prefix}"
+        set name, file("${name}.salmon_output") //into salmon_merge_ch
         
         script:
-        prefix = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
         if (params.singleEnd) {
             """
             salmon quant --seqBias --useVBOpt --gcBias \\
@@ -718,7 +749,7 @@ if(params.salmon_index){
                          --index ${index} \\
                          -r ${reads[0]} \\
                          -p ${task.cpus} \\
-                         -o ${prefix}
+                         -o ${name}.salmon_output
             """
         } else {
             """
@@ -728,11 +759,33 @@ if(params.salmon_index){
                          -1 ${reads[0]} \\
                          -2 ${reads[1]} \\
                          -p ${task.cpus} \\
-                         -o ${prefix}
+                         -o ${name}.salmon_output
             """
         }
     }
 }
+
+/*
+ * STEP 3Salmon.2 - merge salmon outputs
+ */
+// if(!params.skip_tx_exp_quant){
+//     process salmon_merge {
+//         tag "$prefix"
+//         publishDir "${params.outdir}/Salmon", mode: 'copy'
+
+//         input:
+//         set name, file("${name}") from salmon_merge_ch.collect()
+
+//         output:
+//         file "salmon_output.merged.rds"
+        
+//         script:
+//         // TODO: merge sampleIDs and figure out how to containerize R with packages for it
+//         """
+//         Rscript scripts/merge_Salmon.R -s {params.sample_ids} -d {params.dir} -o {output}
+//         """
+//     }
+// }
 
 /*
  * STEP 4 - RSeQC analysis
