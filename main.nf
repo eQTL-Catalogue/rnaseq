@@ -196,6 +196,13 @@ if( workflow.profile == 'uppmax' || workflow.profile == 'uppmax-devel' ){
     if ( !params.project ) exit 1, "No UPPMAX project ID found! Use --project"
 }
 
+if(!params.skip_tx_exp_quant){
+    Channel
+        .fromPath(params.tx_fasta)
+        .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
+        .into { tx_fasta_ch }
+}
+
 //AWSBatch sanity checking
 if(workflow.profile == 'awsbatch'){
     if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
@@ -413,17 +420,19 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
  */
 if(!params.skip_tx_exp_quant ){
     process makeSalmonIndex {
-        tag "${params.tx_fasta_ftp.baseName}"
+        tag "${tx_fasta.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/salmon_index" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
+        input:
+        file tx_fasta from tx_fasta_ch
+
         output:
-        file "${params.tx_fasta_ftp.baseName}.index" into salmon_index
+        file "${tx_fasta.baseName}.index" into salmon_index
         
         script:
         """
-        wget -O - ${params.tx_fasta_ftp} | gunzip -c > ${params.tx_fasta_ftp.baseName}
-        salmon index -t ${params.tx_fasta_ftp.baseName} -i ${params.tx_fasta_ftp.baseName}.index
+        salmon index -t ${tx_fasta} -i ${tx_fasta.baseName}.index
         """
     }
 }
