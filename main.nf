@@ -726,15 +726,15 @@ if(params.aligner == 'hisat2'){
  */
 if(!params.skip_tx_exp_quant){
     process salmon_quant {
-        tag "$name"
+        tag "$samplename"
         publishDir "${params.outdir}/Salmon", mode: 'copy'
 
         input:
-        set name, file(reads) from trimmed_reads_salmon
+        set samplename, file(reads) from trimmed_reads_salmon
         file index from salmon_index.collect()
 
         output:
-        set name, file("${name}.salmon_output") //into salmon_merge_ch
+        file "${samplename}.quant.sf" into salmon_merge_tx_ch
         
         script:
         if (params.singleEnd) {
@@ -744,7 +744,8 @@ if(!params.skip_tx_exp_quant){
                          --index ${index} \\
                          -r ${reads[0]} \\
                          -p ${task.cpus} \\
-                         -o ${name}.salmon_output
+                         -o .
+            mv quant.sf ${samplename}.quant.sf
             """
         } else {
             """
@@ -754,7 +755,8 @@ if(!params.skip_tx_exp_quant){
                          -1 ${reads[0]} \\
                          -2 ${reads[1]} \\
                          -p ${task.cpus} \\
-                         -o ${name}.salmon_output
+                         -o .
+            mv quant.sf ${samplename}.quant.sf
             """
         }
     }
@@ -763,24 +765,32 @@ if(!params.skip_tx_exp_quant){
 /*
  * STEP 3Salmon.2 - merge salmon outputs
  */
-// if(!params.skip_tx_exp_quant){
-//     process salmon_merge {
-//         tag "$prefix"
-//         publishDir "${params.outdir}/Salmon", mode: 'copy'
+if(!params.skip_tx_exp_quant){
+    process salmon_merge {
+        tag "$prefix"
+        publishDir "${params.outdir}/Salmon/__merged_trans_exp", mode: 'copy'
 
-//         input:
-//         set name, file("${name}") from salmon_merge_ch.collect()
+        input:
+        file input_trans from salmon_merge_tx_ch.map { it.toString() }.collectFile(name: 'trans.meta', newLine: true)
 
-//         output:
-//         file "salmon_output.merged.rds"
-        
-//         script:
-//         // TODO: merge sampleIDs and figure out how to containerize R with packages for it
-//         """
-//         Rscript scripts/merge_Salmon.R -s {params.sample_ids} -d {params.dir} -o {output}
-//         """
-//     }
-// }
+        output:
+        file '*merged.txt'
+
+        script:
+        def outtransTPM = "salmon_trans_TPM_merged.txt"
+        def outtransNumReads = "salmon_trans_NumReads_merged.txt"
+        """
+        python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
+        --rm-suffix .quant.sf                                           \\
+        -c -5 --skip-comments --header                                  \\
+        -o $outtransNumReads -I $input_trans
+        python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
+        --rm-suffix .quant.sf                                           \\
+        -c -4 --skip-comments --header                                  \\
+        -o $outtransTPM -I $input_trans
+        """
+    }
+}
 
 /*
  * STEP 4 - RSeQC analysis
