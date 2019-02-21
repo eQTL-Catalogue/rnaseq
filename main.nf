@@ -782,11 +782,11 @@ if(!params.skip_tx_exp_quant){
         """
         python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
         --rm-suffix .quant.sf                                           \\
-        -c -5 --skip-comments --header                                  \\
+        -c 4 --skip-comments --header                                   \\
         -o $outtransNumReads -I $input_trans
         python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
         --rm-suffix .quant.sf                                           \\
-        -c -4 --skip-comments --header                                  \\
+        -c 3 --skip-comments --header                                   \\
         -o $outtransTPM -I $input_trans
         """
     }
