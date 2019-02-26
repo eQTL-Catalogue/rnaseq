@@ -201,6 +201,18 @@ if(!params.skip_tx_exp_quant){
         .fromPath(params.tx_fasta)
         .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
         .into { tx_fasta_ch }
+
+    if(!params.skip_txrevise){
+        Channel.
+            .fromPath(params.txrevise_gffs)
+            .ifEmpty { exit 1, "TxRevise gff files not found : ${params.txrevise_gffs}" }
+            .into { txrevise_gff_ch }
+
+        Channel
+            .fromPath(params.fasta)
+            .ifEmpty { exit 1, "Fasta (reference genome for txrevise) file not found: ${params.fasta}" }
+            .into { genome_fasta_ch }
+    }
 }
 
 //AWSBatch sanity checking
@@ -416,23 +428,48 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
 }
 
 /*
+ * PREPROCESSING - txrevise gff3 to fasta
+ */
+if(!params.skip_tx_exp_quant && !params.skip_txrevise){
+    process gff_to_fasta {
+        tag "${txrevise_gff.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_fasta" : params.outdir },
+                   saveAs: { params.saveReference ? it : null }, mode: 'copy'
+
+        input:
+        file txrevise_gff from txrevise_gffs
+        file genome_fasta from genome_fasta_ch.collect()
+
+        output:
+        file "${txrevise_gff.baseName}.fa" into txrevise_fasta
+        
+        script:
+        """
+        gffread -w ${txrevise_gff.baseName}.fa -g $genome_fasta $txrevise_gff
+        """
+    }
+}
+
+// salmon_fasta_ch = txrevise_fasta.mix(tx_fasta_ch)
+
+/*
  * PREPROCESSING - Build Salmon index
  */
 if(!params.skip_tx_exp_quant ){
     process makeSalmonIndex {
-        tag "${tx_fasta.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/salmon_index" : params.outdir },
+        tag "${fasta.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_index" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
-        file tx_fasta from tx_fasta_ch
+        file fasta from { tx_fasta_ch == null ? tx_fasta_ch : tx_fasta_ch.mix(txrevise_fasta) } 
 
         output:
-        file "${tx_fasta.baseName}.index" into salmon_index
+        file "${fasta.baseName}.index" into salmon_index
         
         script:
         """
-        salmon index -t ${tx_fasta} -i ${tx_fasta.baseName}.index
+        salmon index -t ${fasta} -i ${fasta.baseName}.index
         """
     }
 }
@@ -727,11 +764,11 @@ if(params.aligner == 'hisat2'){
 if(!params.skip_tx_exp_quant){
     process salmon_quant {
         tag "$samplename"
-        publishDir "${params.outdir}/Salmon", mode: 'copy'
+        publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy'
 
         input:
         set samplename, file(reads) from trimmed_reads_salmon
-        file index from salmon_index.collect()
+        each index from salmon_index
 
         output:
         file "${samplename}.quant.sf" into salmon_merge_tx_ch
