@@ -450,8 +450,6 @@ if(!params.skip_tx_exp_quant && !params.skip_txrevise){
     }
 }
 
-// salmon_fasta_ch = txrevise_fasta.mix(tx_fasta_ch)
-
 /*
  * PREPROCESSING - Build Salmon index
  */
@@ -757,13 +755,12 @@ if(params.aligner == 'hisat2'){
     }
 }
 
-
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
  */
 if(!params.skip_tx_exp_quant){
     process salmon_quant {
-        tag "$samplename"
+        tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy'
 
         input:
@@ -771,7 +768,7 @@ if(!params.skip_tx_exp_quant){
         each index from salmon_index
 
         output:
-        file "${samplename}.quant.sf" into salmon_merge_tx_ch
+        set val(index.baseName), file("${samplename}.quant.sf") into salmon_merge_tx_ch
         
         script:
         if (params.singleEnd) {
@@ -804,18 +801,18 @@ if(!params.skip_tx_exp_quant){
  */
 if(!params.skip_tx_exp_quant){
     process salmon_merge {
-        tag "$prefix"
-        publishDir "${params.outdir}/Salmon/__merged_trans_exp", mode: 'copy'
+        tag "${input_trans.baseName}"
+        publishDir "${params.outdir}/Salmon/merged_counts/${input_trans.baseName}", mode: 'copy'
 
         input:
-        file input_trans from salmon_merge_tx_ch.map { it.toString() }.collectFile(name: 'trans.meta', newLine: true)
+        file input_trans from salmon_merge_tx_ch.collectFile() { item -> [ "${item[0]}.txt", item[1].toString() + '\n' ] }
 
         output:
         file '*merged.txt'
 
         script:
-        def outtransTPM = "salmon_trans_TPM_merged.txt"
-        def outtransNumReads = "salmon_trans_NumReads_merged.txt"
+        def outtransTPM = input_trans.baseName + "_TPM_merged.txt"
+        def outtransNumReads = input_trans.baseName + "_NumReads_merged.txt"
         """
         python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
         --rm-suffix .quant.sf                                           \\
