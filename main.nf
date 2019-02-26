@@ -200,18 +200,18 @@ if(!params.skip_tx_exp_quant){
     Channel
         .fromPath(params.tx_fasta)
         .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
-        .into { tx_fasta_ch }
+        .set { tx_fasta_ch }
 
     if(!params.skip_txrevise){
-        Channel.
-            .fromPath(params.txrevise_gffs)
+        Channel
+            .fromPath( params.txrevise_gffs )
             .ifEmpty { exit 1, "TxRevise gff files not found : ${params.txrevise_gffs}" }
-            .into { txrevise_gff_ch }
+            .set { txrevise_gff_ch }
 
         Channel
             .fromPath(params.fasta)
             .ifEmpty { exit 1, "Fasta (reference genome for txrevise) file not found: ${params.fasta}" }
-            .into { genome_fasta_ch }
+            .set { genome_fasta_ch }
     }
 }
 
@@ -437,7 +437,7 @@ if(!params.skip_tx_exp_quant && !params.skip_txrevise){
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
-        file txrevise_gff from txrevise_gffs
+        file txrevise_gff from txrevise_gff_ch
         file genome_fasta from genome_fasta_ch.collect()
 
         output:
@@ -462,7 +462,7 @@ if(!params.skip_tx_exp_quant ){
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
-        file fasta from { tx_fasta_ch == null ? tx_fasta_ch : tx_fasta_ch.mix(txrevise_fasta) } 
+        file fasta from tx_fasta_ch == null ? tx_fasta_ch : tx_fasta_ch.mix(txrevise_fasta)  
 
         output:
         file "${fasta.baseName}.index" into salmon_index

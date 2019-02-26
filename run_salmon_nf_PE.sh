@@ -6,4 +6,7 @@ nextflow run main.nf\
  --aligner 'hisat2'\
  --skip_qc\
  --skip_skip_multiqc\
- --gtf annotation/gtf/gencode.v29.annotation.gtf
+ --saveReference\
+ --gtf annotation/gtf/gencode.v29.annotation.gtf\
+ --fasta annotation/GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
+ --txrevise_gffs 'annotation/txrevise_gff/*.gff3'
