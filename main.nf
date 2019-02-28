@@ -558,8 +558,7 @@ process trim_galore {
     file wherearemyfiles from ch_where_trim_galore.collect()
 
     output:
-    file "*fq.gz" into trimmed_reads
-    set val(name), file("*fq.gz") into trimmed_reads_salmon
+    set val(name), file("*fq.gz") into trimmed_reads, trimmed_reads_salmon
     file "*trimming_report.txt" into trimgalore_results
     file "*_fastqc.{zip,html}" into trimgalore_fastqc_reports
     file "where_are_my_files.txt"
@@ -618,7 +617,8 @@ if(params.aligner == 'star'){
             }
 
         input:
-        file reads from trimmed_reads
+        // TODO (Nurlan Kerimov):  change the prefix to samplename in the future (did not do it because there is no test environment for changes)
+        set samplename, file(reads) from trimmed_reads
         file index from star_index.collect()
         file gtf from gtf_star.collect()
         file wherearemyfiles from ch_where_star.collect()
@@ -665,7 +665,7 @@ if(params.aligner == 'star'){
 if(params.aligner == 'hisat2'){
     star_log = Channel.from(false)
     process hisat2Align {
-        tag "$prefix"
+        tag "$samplename"
         publishDir "${params.outdir}/HISAT2", mode: 'copy',
             saveAs: {filename ->
                 if (filename.indexOf(".hisat2_summary.txt") > 0) "logs/$filename"
@@ -675,20 +675,20 @@ if(params.aligner == 'hisat2'){
             }
 
         input:
-        file reads from trimmed_reads
+        set samplename, file(reads) from trimmed_reads
         file hs2_indices from hs2_indices.collect()
         file alignment_splicesites from alignment_splicesites.collect()
         file wherearemyfiles from ch_where_hisat2.collect()
 
         output:
-        file "${prefix}.bam" into hisat2_bam
-        file "${prefix}.hisat2_summary.txt" into alignment_logs
+        file "${samplename}.bam" into hisat2_bam
+        file "${samplename}.hisat2_summary.txt" into alignment_logs
         file "where_are_my_files.txt"
 
         script:
         index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-        prefix = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
-        seqCenter = params.seqCenter ? "--rg-id ${prefix} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
+        //prefix = reads[0].toString() - ~/(_R1)?(_trimmed)?(_val_1)?(\.fq)?(\.fastq)?(\.gz)?$/
+        seqCenter = params.seqCenter ? "--rg-id ${samplename} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
         def rnastrandness = ''
         if (forward_stranded && !unstranded){
             rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
@@ -704,8 +704,8 @@ if(params.aligner == 'hisat2'){
                    -p ${task.cpus} \\
                    --met-stderr \\
                    --new-summary \\
-                   --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-                   | samtools view -bS -F 4 -F 256 - > ${prefix}.bam
+                   --summary-file ${samplename}.hisat2_summary.txt $seqCenter \\
+                   | samtools view -bS -F 4 -F 256 - > ${samplename}.bam
             """
         } else {
             """
@@ -719,8 +719,8 @@ if(params.aligner == 'hisat2'){
                    -p ${task.cpus} \\
                    --met-stderr \\
                    --new-summary \\
-                   --summary-file ${prefix}.hisat2_summary.txt $seqCenter \\
-                   | samtools view -bS -F 4 -F 8 -F 256 - > ${prefix}.bam
+                   --summary-file ${samplename}.hisat2_summary.txt $seqCenter \\
+                   | samtools view -bS -F 4 -F 8 -F 256 - > ${samplename}.bam
             """
         }
     }
