@@ -681,7 +681,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2.collect()
 
         output:
-        file "${samplename}.bam" into hisat2_bam
+        file "${samplename}.bam" into hisat2_bam, leafcutter_bam
         file "${samplename}.hisat2_summary.txt" into alignment_logs
         file "where_are_my_files.txt"
 
@@ -822,6 +822,52 @@ if(!params.skip_tx_exp_quant){
         --rm-suffix .quant.sf                                           \\
         -c 3 --skip-comments --header                                   \\
         -o $outtransTPM -I $input_trans
+        """
+    }
+}
+
+/*
+ * Leafcutter quantification preparation step
+ */
+if(!params.skip_splicing_exp_quant){
+    process leafcutter_bam_to_junc {
+        tag "${leafcutter_bam.baseName}"
+        publishDir "${params.outdir}/leafcutter/junc", mode: 'copy'
+
+        input:
+        file leafcutter_bam
+
+        output:
+        file '*.junc' into leafcutter_junc
+        
+        script:
+        """
+        samtools view $leafcutter_bam | python $baseDir/bin/leafcutter/filter_cs.py | $baseDir/bin/leafcutter/sam2bed.pl --use-RNA-strand - ${leafcutter_bam.baseName}.bed
+        $baseDir/bin/leafcutter/bed2junc.pl ${leafcutter_bam.baseName}.bed ${leafcutter_bam.baseName}.junc
+        """
+    }
+}
+
+/*
+ * Leafcutter quantification step
+ */
+if(!params.skip_splicing_exp_quant){
+    process leafcutter_cluster_junctions {
+        tag "${junc_files.baseName}"
+        publishDir "${params.outdir}/leafcutter/clustered", mode: 'copy'
+
+        input:
+        file junc_files from leafcutter_junc.map { it.toString() }.collectFile(name: 'junction_files.txt', newLine: true)
+
+        output:
+        file 'leafcutter_perind*.gz'
+        file 'junction_files.tar.gz'
+        
+        script:
+        """
+        tar -czf junction_files.tar.gz -T $junc_files
+        samtools view $leafcutter_bam | python $baseDir/bin/leafcutter/filter_cs.py | $baseDir/bin/leafcutter/sam2bed.pl --use-RNA-strand - ${leafcutter_bam.baseName}.bed
+        python $baseDir/bin/leafcutter/leafcutter_cluster.py -j $junc_files -r . -m 50 -l 500000
         """
     }
 }
