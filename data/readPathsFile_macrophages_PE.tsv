@@ -1,0 +1,4 @@
+eipl_A	data/macrophage_test_data/eipl_A.1.fastq.gz	data/macrophage_test_data/eipl_A.2.fastq.gz
+eipl_C	data/macrophage_test_data/eipl_C.1.fastq.gz	data/macrophage_test_data/eipl_C.2.fastq.gz
+fikt_A	data/macrophage_test_data/fikt_A.1.fastq.gz	data/macrophage_test_data/fikt_A.2.fastq.gz
+fikt_C	data/macrophage_test_data/fikt_C.1.fastq.gz	data/macrophage_test_data/fikt_C.2.fastq.gz
