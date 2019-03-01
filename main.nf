@@ -866,8 +866,7 @@ if(!params.skip_splicing_exp_quant){
         script:
         """
         tar -czf junction_files.tar.gz -T $junc_files
-        samtools view $leafcutter_bam | python $baseDir/bin/leafcutter/filter_cs.py | $baseDir/bin/leafcutter/sam2bed.pl --use-RNA-strand - ${leafcutter_bam.baseName}.bed
-        python $baseDir/bin/leafcutter/leafcutter_cluster.py -j $junc_files -r . -m 50 -l 500000
+        python $baseDir/bin/leafcutter/leafcutter_cluster.py -j $junc_files -r . -m ${params.leafcutter_min_split_reads} -l ${params.leafcutter_max_intron_length}
         """
     }
 }
