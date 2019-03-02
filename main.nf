@@ -172,7 +172,7 @@ if( params.gtf ){
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
         .into { gtf_makeSTARindex; gtf_makeHisatSplicesites; gtf_makeHISATindex; gtf_makeBED12;
-              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_stringtieFPKM }
+              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_stringtieFPKM; gtf_dexseq }
 } else if( params.gff ){
   gffFile = Channel.fromPath(params.gff)
                    .ifEmpty { exit 1, "GFF annotation file not found: ${params.gff}" }
@@ -484,7 +484,7 @@ if(params.gff){
 
       output:
       file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeHisatSplicesites, gtf_makeHISATindex, gtf_makeBED12,
-            gtf_star, gtf_dupradar, gtf_featureCounts, gtf_stringtieFPKM
+            gtf_star, gtf_dupradar, gtf_featureCounts, gtf_stringtieFPKM, gtf_dexseq
 
       script:
       """
@@ -492,6 +492,29 @@ if(params.gff){
       """
   }
 }
+
+/*
+ * PREPROCESSING - Build Exon GFF for dexseq
+ */
+if (!params.skip_exon_quant){
+    process makeDexSeqExonGFF {
+        tag "${gtf.baseName}"
+        publishDir path: { params.saveReference ? "${params.outdir}/dexseq/dexseq_exon_gff" : params.outdir },
+                   saveAs: { params.saveReference ? it : null }, mode: 'copy'
+
+        input:
+        file gtf from gtf_dexseq.collect()
+
+        output:
+        file "${gtf.baseName}.DEXSeq.gff" into gff_dexseq
+        
+        script:
+        """
+        $baseDir/bin/dexseq/dexseq_prepare_annotation.py $gtf ${gtf.baseName}.DEXSeq.gff
+        """
+    }
+}
+
 /*
  * PREPROCESSING - Build BED12 file
  */
@@ -655,7 +678,7 @@ if(params.aligner == 'star'){
     star_aligned
         .filter { logs, bams -> check_log(logs) }
         .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_stringtieFPKM; bam_for_genebody }
+    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_stringtieFPKM; bam_for_genebody; bam_dexseq }
 }
 
 
@@ -739,7 +762,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_dexseq
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc, bam_index_genebody
         file "where_are_my_files.txt"
 
@@ -867,6 +890,39 @@ if(!params.skip_splicing_exp_quant){
         """
         tar -czf junction_files.tar.gz -T $junc_files
         python $baseDir/bin/leafcutter/leafcutter_cluster.py -j $junc_files -r . -m ${params.leafcutter_min_split_reads} -l ${params.leafcutter_max_intron_length}
+        """
+    }
+}
+
+/*
+ * Quantify exon expression - DEXSeq
+ */
+if (!params.skip_exon_quant){
+    process exon_quant_dexseq {
+        tag "${bam.simpleName}"
+        publishDir "${params.outdir}/dexseq/", mode: 'copy'
+
+        input:
+        file bam from bam_dexseq
+        file gff from gff_dexseq.collect()
+
+        output:
+        file "${bam.simpleName}.exoncount.txt"
+
+        script:
+        // TODO: Double check with Kaur
+        def rnastrandness = '-s no' // unstranded
+        if (forward_stranded && !unstranded){
+            rnastrandness = '-s yes'
+        } else if (reverse_stranded && !unstranded){
+            rnastrandness = '-s reverse'
+        }
+        def pairEndness = params.singleEnd ? '' : '-p yes -r pos'
+
+        """
+        samtools view -h -o ${bam.simpleName}.sam $bam
+        $baseDir/bin/dexseq/dexseq_count.py $pairEndness $rnastrandness $gff -a ${params.dexseq_min_align_quality} ${bam.simpleName}.sam ${bam.simpleName}.exoncount.txt
+        rm ${bam.simpleName}.sam
         """
     }
 }
