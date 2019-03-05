@@ -795,10 +795,11 @@ if(!params.skip_tx_exp_quant){
         set val(index.baseName), file("${samplename}.quant.sf") into salmon_merge_tx_ch
         
         script:
+        def strandedness = params.unstranded ? 'U' : 'SR'
         if (params.singleEnd) {
             """
             salmon quant --seqBias --useVBOpt --gcBias \\
-                         --libType SR \\
+                         --libType $strandedness \\
                          --index ${index} \\
                          -r ${reads[0]} \\
                          -p ${task.cpus} \\
@@ -808,7 +809,7 @@ if(!params.skip_tx_exp_quant){
         } else {
             """
             salmon quant --seqBias --useVBOpt --gcBias \\
-                         --libType ISR \\
+                         --libType I$strandedness \\
                          --index $index \\
                          -1 ${reads[0]} \\
                          -2 ${reads[1]} \\
