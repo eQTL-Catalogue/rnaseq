@@ -506,11 +506,12 @@ if (!params.skip_exon_quant){
         file gtf from gtf_dexseq.collect()
 
         output:
-        file "${gtf.baseName}.DEXSeq.gff" into gff_dexseq
+        file "${gtf.baseName}.patched_contigs.DEXSeq.gff" into gff_dexseq
         
         script:
         """
-        $baseDir/bin/dexseq/dexseq_prepare_annotation.py $gtf ${gtf.baseName}.DEXSeq.gff
+        zcat $gtf | sed 's/chrM/chrMT/;s/chr//' > ${gtf.baseName}.patched_contigs.gtf
+        $baseDir/bin/dexseq/dexseq_prepare_annotation.py ${gtf.baseName}.patched_contigs.gtf ${gtf.baseName}.patched_contigs.DEXSeq.gff
         """
     }
 }

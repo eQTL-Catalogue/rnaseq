@@ -1,7 +1,6 @@
 .nextflow*
 work*/
-data/fastq
-data/macrophage_test_data
+data/*
 results*/
 .DS_Store
 tests/test_data/ngi-rna_test_set
