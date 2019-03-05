@@ -510,7 +510,7 @@ if (!params.skip_exon_quant){
         
         script:
         """
-        zcat $gtf | sed 's/chrM/chrMT/;s/chr//' > ${gtf.baseName}.patched_contigs.gtf
+        cat $gtf | sed 's/chrM/chrMT/;s/chr//' > ${gtf.baseName}.patched_contigs.gtf
         $baseDir/bin/dexseq/dexseq_prepare_annotation.py ${gtf.baseName}.patched_contigs.gtf ${gtf.baseName}.patched_contigs.DEXSeq.gff
         """
     }
@@ -901,14 +901,14 @@ if(!params.skip_splicing_exp_quant){
 if (!params.skip_exon_quant){
     process exon_quant_dexseq {
         tag "${bam.simpleName}"
-        publishDir "${params.outdir}/dexseq/", mode: 'copy'
+        publishDir "${params.outdir}/dexseq/quant_files", mode: 'copy'
 
         input:
         file bam from bam_dexseq
         file gff from gff_dexseq.collect()
 
         output:
-        file "${bam.simpleName}.exoncount.txt"
+        file "${bam.simpleName}.exoncount.txt" into merge_exon_count_ch
 
         script:
         // TODO: Double check with Kaur
@@ -928,6 +928,26 @@ if (!params.skip_exon_quant){
     }
 }
 
+/*
+ * merge DEXSeq quantification files
+ */
+if(!params.skip_tx_exp_quant){
+    process exon_quant_dexseq_merge {
+        tag "merge_dexseq_exon_counts"
+        publishDir "${params.outdir}/dexseq", mode: 'copy'
+
+        input:
+        file metafile from merge_exon_count_ch.map { it.toString() }.collectFile(name: 'dexseq.counts.meta', newLine: true)
+
+        output:
+        file '*merged.tsv'
+
+        script:
+        """
+        python3 $workflow.projectDir/bin/merge_featurecounts.py --rm-suffix .exoncount.txt -c 1 -o dexseq.exon.counts.merged.tsv -I $metafile
+        """
+    }
+}
 /*
  * STEP 4 - RSeQC analysis
  */
