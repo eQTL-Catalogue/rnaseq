@@ -857,8 +857,7 @@ if(!params.skip_tx_exp_quant){
 if(!params.skip_splicing_exp_quant){
     process leafcutter_bam_to_junc {
         tag "${leafcutter_bam.baseName}"
-        publishDir "${params.outdir}/leafcutter/junc", mode: 'copy'
-
+        
         input:
         file leafcutter_bam
 
@@ -879,7 +878,7 @@ if(!params.skip_splicing_exp_quant){
 if(!params.skip_splicing_exp_quant){
     process leafcutter_cluster_junctions {
         tag "${junc_files.baseName}"
-        publishDir "${params.outdir}/leafcutter/clustered", mode: 'copy'
+        publishDir "${params.outdir}/leafcutter", mode: 'copy'
 
         input:
         file junc_files from leafcutter_junc.map { it.toString() }.collectFile(name: 'junction_files.txt', newLine: true)
