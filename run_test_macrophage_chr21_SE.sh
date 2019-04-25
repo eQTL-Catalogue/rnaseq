@@ -7,10 +7,13 @@ nextflow run main.nf\
  --aligner 'hisat2'\
  --skip_qc\
  --skip_skip_multiqc\
+ --run_tx_exp_quant\
+ --run_txrevise\
+ --run_splicing_exp_quant\
+ --run_exon_quant\
  --saveReference\
  --saveTrimmed\
  --saveAlignedIntermediates\
  --gtf annotation/gtf/gencode.v29.annotation.gtf\
  --fasta annotation/GRCh38/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
- --txrevise_gffs 'annotation/txrevise_gff/*.gff3'\
- # -resume
+ --txrevise_gffs 'annotation/txrevise_gff/*.gff3'

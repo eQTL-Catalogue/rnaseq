@@ -196,13 +196,13 @@ if( workflow.profile == 'uppmax' || workflow.profile == 'uppmax-devel' ){
     if ( !params.project ) exit 1, "No UPPMAX project ID found! Use --project"
 }
 
-if(!params.skip_tx_exp_quant){
+if(params.run_tx_exp_quant){
     Channel
         .fromPath(params.tx_fasta)
         .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
         .set { tx_fasta_ch }
 
-    if(!params.skip_txrevise){
+    if(params.run_txrevise){
         Channel
             .fromPath( params.txrevise_gffs )
             .ifEmpty { exit 1, "TxRevise gff files not found : ${params.txrevise_gffs}" }
@@ -302,6 +302,10 @@ summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
 summary['Output dir']     = params.outdir
+summary['Run tx quant']         = params.run_tx_exp_quant
+summary['Run exon quant']       = params.run_exon_quant
+summary['Run spl quant']        = params.run_splicing_exp_quant
+summary['Run TxRev quant']      = params.run_txrevise
 summary['Working dir']    = workflow.workDir
 summary['Container']      = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
@@ -430,7 +434,7 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
 /*
  * PREPROCESSING - txrevise gff3 to fasta
  */
-if(!params.skip_tx_exp_quant && !params.skip_txrevise){
+if(params.run_tx_exp_quant && params.run_txrevise){
     process gff_to_fasta {
         tag "${txrevise_gff.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_fasta" : params.outdir },
@@ -450,10 +454,12 @@ if(!params.skip_tx_exp_quant && !params.skip_txrevise){
     }
 }
 
+ // TODO: fix the case when run_tx_exp_quant==true and run_txrevise==false
+
 /*
  * PREPROCESSING - Build Salmon index
  */
-if(!params.skip_tx_exp_quant ){
+if(params.run_tx_exp_quant ){
     process makeSalmonIndex {
         tag "${fasta.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_index" : params.outdir },
@@ -496,7 +502,7 @@ if(params.gff){
 /*
  * PREPROCESSING - Build Exon GFF for dexseq
  */
-if (!params.skip_exon_quant){
+if (params.run_exon_quant){
     process makeDexSeqExonGFF {
         tag "${gtf.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/dexseq/dexseq_exon_gff" : params.outdir },
@@ -782,7 +788,7 @@ if(params.aligner == 'hisat2'){
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
  */
-if(!params.skip_tx_exp_quant){
+if(params.run_tx_exp_quant){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy'
@@ -824,7 +830,7 @@ if(!params.skip_tx_exp_quant){
 /*
  * STEP 3Salmon.2 - merge salmon outputs
  */
-if(!params.skip_tx_exp_quant){
+if(params.run_tx_exp_quant){
     process salmon_merge {
         tag "${input_trans.baseName}"
         publishDir "${params.outdir}/Salmon/merged_counts/${input_trans.baseName}", mode: 'copy'
@@ -854,7 +860,7 @@ if(!params.skip_tx_exp_quant){
 /*
  * Leafcutter quantification preparation step
  */
-if(!params.skip_splicing_exp_quant){
+if(params.run_splicing_exp_quant){
     process leafcutter_bam_to_junc {
         tag "${leafcutter_bam.baseName}"
         
@@ -875,7 +881,7 @@ if(!params.skip_splicing_exp_quant){
 /*
  * Leafcutter quantification step
  */
-if(!params.skip_splicing_exp_quant){
+if(params.run_splicing_exp_quant){
     process leafcutter_cluster_junctions {
         tag "${junc_files.baseName}"
         publishDir "${params.outdir}/leafcutter", mode: 'copy'
@@ -898,7 +904,7 @@ if(!params.skip_splicing_exp_quant){
 /*
  * Quantify exon expression - DEXSeq
  */
-if (!params.skip_exon_quant){
+if (params.run_exon_quant){
     process exon_quant_dexseq {
         tag "${bam.simpleName}"
         publishDir "${params.outdir}/dexseq/quant_files", mode: 'copy'
@@ -931,7 +937,7 @@ if (!params.skip_exon_quant){
 /*
  * merge DEXSeq quantification files
  */
-if(!params.skip_tx_exp_quant){
+if(params.run_tx_exp_quant){
     process exon_quant_dexseq_merge {
         tag "merge_dexseq_exon_counts"
         publishDir "${params.outdir}/dexseq", mode: 'copy'
