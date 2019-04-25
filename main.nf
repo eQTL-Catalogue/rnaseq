@@ -35,6 +35,12 @@ def helpMessage() {
       --readPathFile                Tab-seperated file with sample names and path to the fastq files. (Used if --reads not provided.)
       -profile                      Configuration profile to use. uppmax / uppmax_modules / hebbe / docker / aws
 
+    Additional quantification options:
+      --run_tx_exp_quant            Runs transcript expression quantification (Salmon)
+      --run_txrevise                Runs TxRevise quantification (Salmon with custom reference transciptome)
+      --run_splicing_exp_quant      Runs alternative splicing quantification  (LeafCutter)
+      --run_exon_quant              Runs exon quantification (DEXseq)
+
     Options:
       --genome                      Name of iGenomes reference
       --singleEnd                   Specifies that the input is single end reads
