@@ -31,9 +31,10 @@ The nfcore/rnaseq pipeline comes with documentation about the pipeline, found in
     * [Tübingen QBiC](docs/configuration/qbic.md)
     * [CCGA Kiel](docs/configuration/ccga.md)
     * [Adding your own system](docs/configuration/adding_your_own.md)
-3. [Running the pipeline](docs/usage.md)
-4. [Output and how to interpret the results](docs/output.md)
-5. [Troubleshooting](docs/troubleshooting.md)
+3. [Running the pipeline (Gene expression)](docs/usage.md)
+4. [Running the pipeline (With additional quantification methods)](docs/extra_phenotype_quantification.md)
+5. [Output and how to interpret the results](docs/output.md)
+6. [Troubleshooting](docs/troubleshooting.md)
 
 ### Credits
 These scripts were originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
