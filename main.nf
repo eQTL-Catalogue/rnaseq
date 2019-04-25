@@ -32,6 +32,7 @@ def helpMessage() {
 
     Mandatory arguments:
       --reads                       Path to input data (must be surrounded with quotes)
+      --readPathFile                Tab-seperated file with sample names and path to the fastq files. (Used if --reads not provided.)
       -profile                      Configuration profile to use. uppmax / uppmax_modules / hebbe / docker / aws
 
     Options:
