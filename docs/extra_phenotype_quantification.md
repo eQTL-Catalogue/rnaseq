@@ -1,8 +1,8 @@
----
+# Running Transcript, Exon, Alternative Splicing and TxRevise expression quantification
+With default parameters this pipeline will only quantify gene expression. Other phenotypes can be quantified with providing the necessary parameters.
+
 ## Running Transcript Expression Quantification
-With default parameters this pipeline will only quantify gene expression. Pipeline uses [Salmon](https://combine-lab.github.io/salmon/) tool to quantify transcript expression.
-<br/>
-<br/>
+Pipeline uses [Salmon](https://combine-lab.github.io/salmon/) tool to quantify transcript expression.
 In order to run transcript expression quantification the following parameters should be provided:
 
 ### `--run_tx_exp_quant`
@@ -30,8 +30,6 @@ params {
 ---
 ## Running Exon Expression Quantification
 Pipeline uses [DEXseq](https://bioconductor.org/packages/release/bioc/vignettes/DEXSeq/inst/doc/DEXSeq.pdf) tool to quantify exon expression.
-<br/>
-<br/>
 In order to run exon expression quantification the following parameters should be provided:
 
 ### `--run_exon_quant`
@@ -51,8 +49,6 @@ params {
 ---
 ## Running Alternative Splicing Expression Quantification
 Pipeline uses [LeafCutter](https://github.com/davidaknowles/leafcutter) tool to quantify alternative splicing expression.
-<br/>
-<br/>
 In order to run exon expression quantification the following parameters should be provided:
 
 ### `--run_splicing_exp_quant`
@@ -72,8 +68,6 @@ params {
 ---
 ## Running Txrevise Expression Quantification
 [TxRevise](https://elifesciences.org/articles/41673) is a quantification method is based on running Salmon tool with customly designed reference transcriptome to quantify expression level of specific events.
-<br/>
-<br/>
 In order to run TxRevise the following parameters should be provided:
 
 ### `--run_txrevise`
