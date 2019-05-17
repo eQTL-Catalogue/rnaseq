@@ -5,7 +5,7 @@ nextflow run main.nf\
  --hisat2_index /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/hisat2_index_v96/Homo_sapiens.GRCh38.dna.primary_assembly\
  --aligner 'hisat2'\
  --skip_qc\
- --skip_skip_multiqc\
+ --skip_multiqc\
  --saveReference\
  --run_tx_exp_quant\
  --run_txrevise\
@@ -15,4 +15,5 @@ nextflow run main.nf\
  --saveAlignedIntermediates\
  --gtf /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\
  --fasta /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
- --txrevise_gffs '/gpfs/hpc/home/a72094/annotations/GRCh38/txrevise_gff/*.gff3'
+ --txrevise_gffs '/gpfs/hpc/home/a72094/annotations/GRCh38/txrevise_gff/*.gff3'\
+ --tx_fasta /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/gencode.v30.transcripts.fa
