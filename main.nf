@@ -519,7 +519,7 @@ if (params.run_exon_quant){
         file gtf from gtf_dexseq.collect()
 
         output:
-        file "${gtf.baseName}.patched_contigs.DEXSeq.gff" into gff_dexseq
+        file "${gtf.baseName}.patched_contigs.DEXSeq.gff" into dexseq_gff_count_exons
         
         script:
         """
@@ -692,7 +692,7 @@ if(params.aligner == 'star'){
     star_aligned
         .filter { logs, bams -> check_log(logs) }
         .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_stringtieFPKM; bam_for_genebody; bam_dexseq }
+    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_stringtieFPKM; bam_for_genebody; bam_count_exons }
 }
 
 
@@ -776,7 +776,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_dexseq
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_count_exons
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc, bam_index_genebody
         file "where_are_my_files.txt"
 
@@ -909,55 +909,53 @@ if(params.run_splicing_exp_quant){
 }
 
 /*
- * Quantify exon expression - DEXSeq
+ * Quantify exon expression - featureCounts (exon level)
  */
 if (params.run_exon_quant){
-    process exon_quant_dexseq {
+    process count_exons {
         tag "${bam.simpleName}"
-        publishDir "${params.outdir}/dexseq/quant_files", mode: 'copy'
+        publishDir "${params.outdir}/dexseq_exon_counts/quant_files", mode: 'copy'
 
         input:
-        file bam from bam_dexseq
-        file gff from gff_dexseq.collect()
+        file bam from bam_count_exons
+        file gff from dexseq_gff_count_exons.collect()
 
         output:
         file "${bam.simpleName}.exoncount.txt" into merge_exon_count_ch
 
         script:
-        // TODO: Double check with Kaur
-        def rnastrandness = '-s no' // unstranded
-        if (forward_stranded && !unstranded){
-            rnastrandness = '-s yes'
+        def featureCounts_direction = 0
+        if (forward_stranded && !unstranded) {
+            featureCounts_direction = 1
         } else if (reverse_stranded && !unstranded){
-            rnastrandness = '-s reverse'
+            featureCounts_direction = 2
         }
-        def pairEndness = params.singleEnd ? '' : '-p yes -r pos'
-
         """
-        samtools view -h -o ${bam.simpleName}.sam $bam
-        $baseDir/bin/dexseq/dexseq_count.py $pairEndness $rnastrandness $gff -a ${params.dexseq_min_align_quality} ${bam.simpleName}.sam ${bam.simpleName}.exoncount.txt
-        rm ${bam.simpleName}.sam
+        featureCounts -p -t exonic_part -s $featureCounts_direction -f -O -a $gff -o ${bam.simpleName}.exoncount.txt $bam
         """
     }
 }
 
 /*
- * merge DEXSeq quantification files
+ * Merge exon counts files
  */
-if(params.run_tx_exp_quant){
-    process exon_quant_dexseq_merge {
-        tag "merge_dexseq_exon_counts"
-        publishDir "${params.outdir}/dexseq", mode: 'copy'
+if(params.run_exon_quant){
+    process exon_count_merge {
+        tag "merge_exon_counts"
+        publishDir "${params.outdir}/dexseq_exon_counts", mode: 'copy'
 
         input:
-        file metafile from merge_exon_count_ch.map { it.toString() }.collectFile(name: 'dexseq.counts.meta', newLine: true)
+        file input_files from merge_exon_count_ch.collect()
 
         output:
-        file '*merged.tsv'
+        file 'merged_exon_counts.tsv'
 
         script:
+        //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
+        def single = input_files instanceof Path ? 1 : input_files.size()
+        def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand"'
         """
-        python3 $workflow.projectDir/bin/merge_featurecounts.py --rm-suffix .exoncount.txt -c 1 -o dexseq.exon.counts.merged.tsv -I $metafile
+        $merge $input_files | sed 's/.sorted.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | sed '1s/Geneid_Chr_Start_End/phenotype_id/g'> merged_exon_counts.tsv
         """
     }
 }
@@ -1211,7 +1209,7 @@ process featureCounts {
     sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
     """
     featureCounts -a $gtf -g gene_id -o ${bam_featurecounts.baseName}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
-    featureCounts -a $gtf -g gene_biotype -o ${bam_featurecounts.baseName}_biotype.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
+    featureCounts -a $gtf -g gene_type -o ${bam_featurecounts.baseName}_biotype.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
     cut -f 1,7 ${bam_featurecounts.baseName}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${bam_featurecounts.baseName}_biotype_counts_mqc.txt
     mqc_features_stat.py ${bam_featurecounts.baseName}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${bam_featurecounts.baseName}_biotype_counts_gs_mqc.tsv
     """
