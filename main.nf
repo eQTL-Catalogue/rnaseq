@@ -222,6 +222,13 @@ if(params.run_tx_exp_quant){
     }
 }
 
+if(params.run_mbv){
+    Channel
+        .fromPath(params.mbv_vcf)
+        .ifEmpty { exit 1, "VCF file is not found to perform MBV: ${params.mbv_vcf}" }
+        .set { mbv_vcf_ch }
+}
+
 //AWSBatch sanity checking
 if(workflow.profile == 'awsbatch'){
     if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
@@ -512,7 +519,7 @@ if(params.gff){
 if (params.run_exon_quant){
     process makeDexSeqExonGFF {
         tag "${gtf.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/dexseq/dexseq_exon_gff" : params.outdir },
+        publishDir path: { params.saveReference ? "${params.outdir}/dexseq_exon_counts" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
 
         input:
@@ -661,6 +668,7 @@ if(params.aligner == 'star'){
         file wherearemyfiles from ch_where_star.collect()
 
         output:
+        // Add leafcutter and MBV bam channels to STAR alignment (here) too
         set file("*Log.final.out"), file ('*.bam') into star_aligned
         file "*.out" into alignment_logs
         file "*SJ.out.tab"
@@ -718,7 +726,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2.collect()
 
         output:
-        file "${samplename}.bam" into hisat2_bam, leafcutter_bam
+        file "${samplename}.bam" into hisat2_bam, leafcutter_bam, mbv_bam
         file "${samplename}.hisat2_summary.txt" into alignment_logs
         file "where_are_my_files.txt"
 
@@ -959,6 +967,30 @@ if(params.run_exon_quant){
         """
     }
 }
+
+/*
+ * Run QTLtools MBV
+ */
+if(params.run_mbv){
+    process run_mbv {
+        tag "${mbv_bam.simpleName}"
+        publishDir "${params.outdir}/MBV", mode: 'copy'
+
+        input:
+        file mbv_bam
+        file vcf from mbv_vcf_ch
+
+        output:
+        file "${mbv_bam.simpleName}.mbv_output.txt"
+
+        script:
+        """
+        samtools index $vcf
+		QTLtools mbv --vcf $mbv_vcf --bam $mbv_bam --out ${mbv_bam.simpleName}.mbv_output.txt
+        """
+    }
+}
+
 /*
  * STEP 4 - RSeQC analysis
  */
