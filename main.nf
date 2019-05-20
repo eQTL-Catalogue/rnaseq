@@ -726,7 +726,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2.collect()
 
         output:
-        file "${samplename}.bam" into hisat2_bam, leafcutter_bam, mbv_bam
+        file "${samplename}.bam" into hisat2_bam
         file "${samplename}.hisat2_summary.txt" into alignment_logs
         file "where_are_my_files.txt"
 
@@ -784,7 +784,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_count_exons
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_count_exons, leafcutter_bam, mbv_bam
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc, bam_index_genebody
         file "where_are_my_files.txt"
 
@@ -978,15 +978,15 @@ if(params.run_mbv){
 
         input:
         file mbv_bam
-        file vcf from mbv_vcf_ch
+        file vcf from mbv_vcf_ch.collect()
 
         output:
         file "${mbv_bam.simpleName}.mbv_output.txt"
 
         script:
         """
-        samtools index $vcf
-		QTLtools mbv --vcf $mbv_vcf --bam $mbv_bam --out ${mbv_bam.simpleName}.mbv_output.txt
+        samtools index $mbv_bam
+		QTLtools mbv --vcf $vcf --bam $mbv_bam --out ${mbv_bam.simpleName}.mbv_output.txt
         """
     }
 }
