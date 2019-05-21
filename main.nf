@@ -963,7 +963,7 @@ if(params.run_exon_quant){
         def single = input_files instanceof Path ? 1 : input_files.size()
         def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand"'
         """
-        $merge $input_files | sed 's/.sorted.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | sed '1s/Geneid_Chr_Start_End/phenotype_id/g'> merged_exon_counts.tsv
+        $merge $input_files | sed 's/.sorted.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | csvtk rename -t -f Geneid_Chr_Start_End -n phenotype_id | csvtk cut -t -f "-Chr,-Start,-End,-Strand,-Length" > merged_exon_counts.tsv
         """
     }
 }
