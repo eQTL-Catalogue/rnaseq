@@ -905,14 +905,16 @@ if(params.run_splicing_exp_quant){
         file junc_files from leafcutter_junc.map { it.toString() }.collectFile(name: 'junction_files.txt', newLine: true)
 
         output:
-        file 'leafcutter_perind*.gz'
+        file 'leafcutter_perind*.formatted.gz'
         file 'junction_files.tar.gz'
         
         script:
         """
         tar -czf junction_files.tar.gz -T $junc_files
         python $baseDir/bin/leafcutter/leafcutter_cluster.py -j $junc_files -r . -m ${params.leafcutter_min_split_reads} -l ${params.leafcutter_max_intron_length}
-        """
+        zcat leafcutter_perind.counts.gz | csvtk space2tab | csvtk rename -t -f chrom -n phenotype_id | sed 's/.sorted//g' | gzip -c > leafcutter_perind.counts.formatted.gz 
+        zcat leafcutter_perind_numers.counts.gz | sed '1s/^/phenotype_id\t/' | sed 's/.sorted//g' | gzip -c > leafcutter_perind_numers.counts.formatted.gz
+        """        
     }
 }
 
