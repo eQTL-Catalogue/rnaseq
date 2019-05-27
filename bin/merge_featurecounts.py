@@ -57,7 +57,7 @@ def merge_featureCounts(dest_dir,out_file,input_files):
    logger.info("Writing to file {}".format(out_file))
    with open(out_file, 'w') as f:
        #Generate header
-       line_to_write="ENSEMBL_ID"
+       line_to_write="phenotype_id"
        sample_names.sort()
        for sample_name in sample_names:
            line_to_write+=('\t{}'.format(sample_name))
