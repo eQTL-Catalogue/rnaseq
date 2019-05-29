@@ -17,6 +17,6 @@ nextflow run main.nf\
  --saveAlignedIntermediates\
  --gtf /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\
  --fasta /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
- --txrevise_gffs '/gpfs/hpc/home/a72094/annotations/GRCh38/txrevise_gff/*.gff3'\
+ --txrevise_gffs '/gpfs/hpchome/a72094/hpc/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.96.version_1/*.gff3'\
  --tx_fasta /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/gencode.v30.transcripts.fa\
  -resume
