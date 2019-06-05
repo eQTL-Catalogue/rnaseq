@@ -12,7 +12,7 @@ nextflow run main.nf\
  --run_splicing_exp_quant\
  --run_exon_quant\
  --run_mbv\
- --mbv_vcf /gpfs/hpc/home/a72094/datasets/controlled_access/Alasoo_2018/genotypes/Alasoo_2018_GRCh38.filtered.vcf.gz\
+ --mbv_vcf /gpfs/hpc/home/a72094/datasets/open_access/testdata/macrophage_test_data/Alasoo_2018_chr21_test_samples.vcf.gz\
  --saveTrimmed\
  --saveAlignedIntermediates\
  --gtf /gpfs/hpc/home/a72094/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\

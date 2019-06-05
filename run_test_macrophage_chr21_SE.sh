@@ -11,6 +11,8 @@ nextflow run main.nf\
  --run_txrevise\
  --run_splicing_exp_quant\
  --run_exon_quant\
+ --run_mbv\
+ --mbv_vcf /gpfs/hpc/home/a72094/datasets/open_access/testdata/macrophage_test_data/Alasoo_2018_chr21_test_samples.vcf.gz\
  --saveReference\
  --saveTrimmed\
  --saveAlignedIntermediates\
