@@ -255,6 +255,7 @@ if(params.readPathsFile && !params.readPaths){
     if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
 
     file.splitEachLine("\t") {row -> readPaths.add( [row[0], [ row[1], row[2] ]] ) }
+    if(readPaths.flatten().contains(null)) { exit 1, "readPathsFile is empty or in wrong format (not TSV)"}
 }
 if(readPaths){
     if(params.singleEnd){
