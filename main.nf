@@ -203,23 +203,25 @@ if( workflow.profile == 'uppmax' || workflow.profile == 'uppmax-devel' ){
     if ( !params.project ) exit 1, "No UPPMAX project ID found! Use --project"
 }
 
+if(params.run_tx_exp_quant || params.run_txrevise) { Channel.empty().set { salmon_fasta_ch } }
+
 if(params.run_tx_exp_quant){
     Channel
         .fromPath(params.tx_fasta)
         .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
         .set { tx_fasta_ch }
+}
 
-    if(params.run_txrevise){
-        Channel
-            .fromPath( params.txrevise_gffs )
-            .ifEmpty { exit 1, "TxRevise gff files not found : ${params.txrevise_gffs}" }
-            .set { txrevise_gff_ch }
+if(params.run_txrevise){
+    Channel
+        .fromPath( params.txrevise_gffs )
+        .ifEmpty { exit 1, "TxRevise gff files not found : ${params.txrevise_gffs}" }
+        .set { txrevise_gff_ch }
 
-        Channel
-            .fromPath(params.fasta)
-            .ifEmpty { exit 1, "Fasta (reference genome for txrevise) file not found: ${params.fasta}" }
-            .set { genome_fasta_ch }
-    }
+    Channel
+        .fromPath(params.fasta)
+        .ifEmpty { exit 1, "Fasta (reference genome for txrevise) file not found: ${params.fasta}" }
+        .set { genome_fasta_ch }
 }
 
 if(params.run_mbv){
@@ -253,6 +255,7 @@ if(params.readPathsFile && !params.readPaths){
     if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
 
     file.splitEachLine("\t") {row -> readPaths.add( [row[0], [ row[1], row[2] ]] ) }
+    if(readPaths.flatten().contains(null)) { exit 1, "readPathsFile is empty or in wrong format (not TSV)"}
 }
 if(readPaths){
     if(params.singleEnd){
@@ -448,7 +451,7 @@ if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
 /*
  * PREPROCESSING - txrevise gff3 to fasta
  */
-if(params.run_tx_exp_quant && params.run_txrevise){
+if(params.run_txrevise){
     process gff_to_fasta {
         tag "${txrevise_gff.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_fasta" : params.outdir },
@@ -459,7 +462,7 @@ if(params.run_tx_exp_quant && params.run_txrevise){
         file genome_fasta from genome_fasta_ch.collect()
 
         output:
-        file "${txrevise_gff.baseName}.fa" into txrevise_fasta
+        file "${txrevise_gff.baseName}.fa" into txrevise_fasta_ch
         
         script:
         """
@@ -468,19 +471,20 @@ if(params.run_tx_exp_quant && params.run_txrevise){
     }
 }
 
- // TODO: fix the case when run_tx_exp_quant==true and run_txrevise==false
+if( params.run_tx_exp_quant) { salmon_fasta_ch.mix(tx_fasta_ch).set { salmon_fasta_ch } }
+if( params.run_txrevise) { salmon_fasta_ch.mix(txrevise_fasta_ch).set { salmon_fasta_ch }  }
 
 /*
  * PREPROCESSING - Build Salmon index
  */
-if(params.run_tx_exp_quant ){
+if(params.run_tx_exp_quant || params.run_txrevise ){
     process makeSalmonIndex {
         tag "${fasta.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_index" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
-
+        
         input:
-        file fasta from tx_fasta_ch == null ? tx_fasta_ch : tx_fasta_ch.mix(txrevise_fasta)  
+        file fasta from salmon_fasta_ch
 
         output:
         file "${fasta.baseName}.index" into salmon_index
