@@ -810,14 +810,16 @@ if(params.aligner == 'hisat2'){
 if(params.run_tx_exp_quant){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
-        publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy'
+        publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy',
+            saveAs: {filename -> if (filename.indexOf(".edited.quant.sf") == 0) "logs/$filename" else null }
 
         input:
         set samplename, file(reads) from trimmed_reads_salmon
         each index from salmon_index
 
         output:
-        set val(index.baseName), file("${samplename}.quant.sf") into salmon_merge_tx_ch
+        set val(index.baseName), file("${samplename}.edited.quant.sf") into salmon_merge_tx_ch
+        file "${samplename}.quant.sf"
         
         script:
         def strandedness = params.unstranded ? 'U' : 'SR'
@@ -830,6 +832,7 @@ if(params.run_tx_exp_quant){
                          -p ${task.cpus} \\
                          -o .
             mv quant.sf ${samplename}.quant.sf
+            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.edited.quant.sf
             """
         } else {
             """
@@ -841,6 +844,7 @@ if(params.run_tx_exp_quant){
                          -p ${task.cpus} \\
                          -o .
             mv quant.sf ${samplename}.quant.sf
+            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.edited.quant.sf
             """
         }
     }
@@ -851,27 +855,23 @@ if(params.run_tx_exp_quant){
  */
 if(params.run_tx_exp_quant){
     process salmon_merge {
-        tag "${input_trans.baseName}"
-        publishDir "${params.outdir}/Salmon/merged_counts/${input_trans.baseName}", mode: 'copy'
+        tag "merge_salmon_${index}"
+        publishDir "${params.outdir}/Salmon/merged_counts/${index}", mode: 'copy'
 
         input:
-        file input_trans from salmon_merge_tx_ch.collectFile() { item -> [ "${item[0]}.txt", item[1].toString() + '\n' ] }
+        set index, file(input_files) from salmon_merge_tx_ch.groupTuple()
 
         output:
         file '*merged.txt'
 
         script:
-        def outtransTPM = input_trans.baseName + "_TPM_merged.txt"
-        def outtransNumReads = input_trans.baseName + "_NumReads_merged.txt"
+        //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
+        def single = input_files instanceof Path ? 1 : input_files.size()
+        def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Name"'
         """
-        python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
-        --rm-suffix .quant.sf                                           \\
-        -c 4 --skip-comments --header                                   \\
-        -o $outtransNumReads -I $input_trans
-        python3 $workflow.projectDir/bin/merge_featurecounts.py         \\
-        --rm-suffix .quant.sf                                           \\
-        -c 3 --skip-comments --header                                   \\
-        -o $outtransTPM -I $input_trans
+        $merge $input_files | csvtk rename -t -f Name -n phenotype_id > merged_TPMS_NumReads.tsv
+        csvtk cut -t -F -f -"*_NumReads" merged_TPMS_NumReads.tsv | sed 's/_TPM//g' > ${index}._TPM_merged.txt
+        csvtk cut -t -F -f -"*_TPM" merged_TPMS_NumReads.tsv | sed 's/_NumReads//g' > ${index}._NumReads_merged.txt
         """
     }
 }
