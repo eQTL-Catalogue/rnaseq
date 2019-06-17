@@ -6,6 +6,7 @@ nextflow run main.nf\
  --aligner 'hisat2'\
  --skip_qc\
  --skip_multiqc\
+ --skip_stringtie\
  --saveReference\
  --run_tx_exp_quant\
  --run_txrevise\

@@ -89,6 +89,7 @@ def helpMessage() {
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
       --skip_edger                  Skip edgeR MDS plot and heatmap
       --skip_multiqc                Skip MultiQC
+      --skip_stringtie              Skip Stringtie
 
     AWSBatch options:
       --awsqueue                    The AWSBatch JobQueue that needs to be set when running on AWSBatch
@@ -1288,6 +1289,9 @@ process stringtieFPKM {
             else if (filename.indexOf("ballgown") > 0) "ballgown/$filename"
             else "$filename"
         }
+
+    when:
+    !params.skip_stringtie
 
     input:
     file bam_stringtieFPKM
