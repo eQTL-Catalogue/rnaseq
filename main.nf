@@ -813,7 +813,7 @@ if(params.run_tx_exp_quant){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy',
-            saveAs: {filename -> if (filename.indexOf(".edited.quant.sf") == 0) "logs/$filename" else null }
+            saveAs: {filename -> if (filename.indexOf(".edited.quant.sf") == 0) filename else null }
 
         input:
         set samplename, file(reads) from trimmed_reads_salmon
@@ -858,7 +858,10 @@ if(params.run_tx_exp_quant){
 if(params.run_tx_exp_quant){
     process salmon_merge {
         tag "merge_salmon_${index}"
-        publishDir "${params.outdir}/Salmon/merged_counts/${index}", mode: 'copy'
+        publishDir "${params.outdir}/Salmon/merged_counts/", mode: 'copy',
+            saveAs: {filename -> if (filename.indexOf("TPM.merged.txt") > 0) "TPM/$filename"
+            else if (filename.indexOf(".NumReads.merged.txt") > 0) "NumReads/$filename"
+            else null }
 
         input:
         set index, file(input_files) from salmon_merge_tx_ch.groupTuple()
