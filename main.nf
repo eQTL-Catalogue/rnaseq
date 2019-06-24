@@ -812,16 +812,16 @@ if(params.aligner == 'hisat2'){
 if(params.run_tx_exp_quant){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
-        publishDir "${params.outdir}/Salmon/quant/${index.baseName}", mode: 'copy',
-            saveAs: {filename -> if (filename.indexOf(".edited.quant.sf") == 0) filename else null }
+        publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy',
+            saveAs: {filename -> if (filename.indexOf(".quant.sf") > 0) filename else null }
 
         input:
         set samplename, file(reads) from trimmed_reads_salmon
         each index from salmon_index
 
         output:
-        set val(index.baseName), file("${samplename}.edited.quant.sf") into salmon_merge_tx_ch
-        file "${samplename}.quant.sf"
+        set val(index.baseName), file("${samplename}.quant.edited.sf") into salmon_merge_tx_ch
+        file '*.quant.sf'
         
         script:
         def strandedness = params.unstranded ? 'U' : 'SR'
@@ -834,7 +834,7 @@ if(params.run_tx_exp_quant){
                          -p ${task.cpus} \\
                          -o .
             mv quant.sf ${samplename}.quant.sf
-            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.edited.quant.sf
+            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.quant.edited.sf
             """
         } else {
             """
@@ -846,7 +846,7 @@ if(params.run_tx_exp_quant){
                          -p ${task.cpus} \\
                          -o .
             mv quant.sf ${samplename}.quant.sf
-            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.edited.quant.sf
+            cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.quant.edited.sf
             """
         }
     }
