@@ -249,16 +249,22 @@ if( !(workflow.runName ==~ /[a-z]+_[a-z]+/) ){
 /*
  * Create a channel for input read files
  */
-def readPaths = params.readPaths ?: []
-if(params.readPathsFile && !params.readPaths){
-    def file = new File(params.readPathsFile)
-    if (!file.exists()) { exit 1, "params.readPathsFile does not exist or is unreachable" }
-    if (!file.canRead()) { exit 1, "params.readPathsFile is not readable" }
-
-    file.splitEachLine("\t") {row -> readPaths.add( [row[0], [ row[1], row[2] ]] ) }
-//    if(readPaths.flatten().contains(null)) { exit 1, "readPathsFile is empty or in wrong format (not TSV)"}
-}
-if(readPaths){
+if(params.readPathsFile){
+    if(params.singleEnd){
+        Channel.fromPath(params.readPathsFile)
+        .ifEmpty { error "Cannot find any readPathsFile file in: ${params.readPathsFile}" }
+        .splitCsv(header: false, sep: '\t', strip: true)
+        .map{row -> [ row[0], [ file(row[1]) ] ]}
+        .into { raw_reads_fastqc; raw_reads_trimgalore }
+    } else {
+        Channel.fromPath(params.readPathsFile)
+        .ifEmpty { error "Cannot find any readPathsFile file in: ${params.readPathsFile}" }
+        .splitCsv(header: false, sep: '\t', strip: true)
+        .map{row -> [ row[0], [ file(row[1]) , file(row[2]) ] ]}
+        .into { raw_reads_fastqc; raw_reads_trimgalore }
+    }
+} 
+else if(readPaths){
     if(params.singleEnd){
         Channel
             .from(readPaths)
