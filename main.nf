@@ -960,11 +960,11 @@ if (params.run_exon_quant){
  */
 if(params.run_exon_quant){
     process exon_count_merge {
-        tag "merge_exon_counts"
+        tag "merge exon ${input_files.size()} files"
         publishDir "${params.outdir}/dexseq_exon_counts", mode: 'copy'
 
         input:
-        file input_files from merge_exon_count_ch.collect()
+        file input_files from merge_exon_count_ch.toSortedList()
 
         output:
         file 'merged_exon_counts.tsv'
@@ -1262,11 +1262,11 @@ process featureCounts {
  * STEP 9 - Merge featurecounts
  */
 process merge_featureCounts {
-    tag "${input_files[0].baseName - '.sorted'}"
+    tag "merge ${input_files.size()} files"
     publishDir "${params.outdir}/featureCounts", mode: 'copy'
 
     input:
-    file input_files from featureCounts_to_merge.collect()
+    file input_files from featureCounts_to_merge.toSortedList()
 
     output:
     file 'merged_gene_counts.txt'
