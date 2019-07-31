@@ -815,7 +815,7 @@ if(params.aligner == 'hisat2'){
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
  */
-if(params.run_tx_exp_quant){
+if(params.run_tx_exp_quant || params.run_txrevise ){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy',
@@ -861,7 +861,7 @@ if(params.run_tx_exp_quant){
 /*
  * STEP 3Salmon.2 - merge salmon outputs
  */
-if(params.run_tx_exp_quant){
+if(params.run_tx_exp_quant || params.run_txrevise ){
     process salmon_merge {
         tag "merge_salmon_${index}"
         publishDir "${params.outdir}/Salmon/merged_counts/", mode: 'copy',
