@@ -3,7 +3,7 @@ bams = Channel.fromPath(params.bamsPath)
 
 process bam_to_fastq{
     tag "${bam_file.simpleName}"
-    publishDir "${params.outdir}/bam_to_fastq_results/"
+    publishDir "${params.outdir}/bam_to_fastq_results/", mode: 'copy'
     memory '4 GB'
     cpus 2
 
