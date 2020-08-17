@@ -335,7 +335,7 @@ summary['Working dir']    = workflow.workDir
 summary['Container']      = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Current home']   = "$HOME"
-summary['Current user']   = "$USER"
+summary['Current user']   = workflow.userName
 summary['Current path']   = "$PWD"
 summary['Script dir']     = workflow.projectDir
 summary['Config Profile'] = workflow.profile
@@ -396,6 +396,7 @@ if(params.aligner == 'star' && !params.star_index && params.fasta){
  */
 if(params.aligner == 'hisat2' && !params.splicesites){
     process makeHisatSplicesites {
+        
         tag "$gtf"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -417,6 +418,7 @@ if(params.aligner == 'hisat2' && !params.splicesites){
  */
 if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
     process makeHISATindex {
+        
         tag "$fasta"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -530,6 +532,7 @@ if(params.gff){
  */
 if (params.run_exon_quant){
     process makeDexSeqExonGFF {
+        
         tag "${gtf.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/dexseq_exon_counts" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -553,6 +556,7 @@ if (params.run_exon_quant){
  */
 if(!params.bed12){
     process makeBED12 {
+
         tag "$gtf"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -722,6 +726,7 @@ if(params.aligner == 'star'){
 if(params.aligner == 'hisat2'){
     star_log = Channel.from(false)
     process hisat2Align {
+        
         tag "$samplename"
         publishDir "${params.outdir}/HISAT2", mode: 'copy',
             saveAs: {filename ->
@@ -1539,7 +1544,7 @@ workflow.onComplete {
     def email_html = html_template.toString()
 
     // Render the sendmail template
-    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report, mqcMaxSize: params.maxMultiqcEmailFileSize.toBytes() ]
+    def smail_fields = [ email: params.email, subject: subject, email_txt: email_txt, email_html: email_html, baseDir: "$baseDir", mqcFile: mqc_report, mqcMaxSize: params.maxMultiqcEmailFileSize ]
     def sf = new File("$baseDir/assets/sendmail_template.txt")
     def sendmail_template = engine.createTemplate(sf).make(smail_fields)
     def sendmail_html = sendmail_template.toString()
