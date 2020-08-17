@@ -561,6 +561,9 @@ if (params.run_exon_quant){
  */
 if(!params.bed12){
     process makeBED12 {
+
+        container 'kerimoff/rnaseq:latest'
+
         tag "$gtf"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
