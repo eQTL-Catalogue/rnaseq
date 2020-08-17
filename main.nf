@@ -396,6 +396,9 @@ if(params.aligner == 'star' && !params.star_index && params.fasta){
  */
 if(params.aligner == 'hisat2' && !params.splicesites){
     process makeHisatSplicesites {
+        
+        container 'quay.io/biocontainers/hisat2' 
+
         tag "$gtf"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -417,6 +420,8 @@ if(params.aligner == 'hisat2' && !params.splicesites){
  */
 if(params.aligner == 'hisat2' && !params.hisat2_index && params.fasta){
     process makeHISATindex {
+        container 'quay.io/biocontainers/hisat2' 
+        
         tag "$fasta"
         publishDir path: { params.saveReference ? "${params.outdir}/reference_genome" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
@@ -722,6 +727,9 @@ if(params.aligner == 'star'){
 if(params.aligner == 'hisat2'){
     star_log = Channel.from(false)
     process hisat2Align {
+        
+        container 'quay.io/biocontainers/hisat2' 
+        
         tag "$samplename"
         publishDir "${params.outdir}/HISAT2", mode: 'copy',
             saveAs: {filename ->
