@@ -535,6 +535,9 @@ if(params.gff){
  */
 if (params.run_exon_quant){
     process makeDexSeqExonGFF {
+        
+        container 'https://quay.io/repository/biocontainers/bioconductor-dexseq'
+
         tag "${gtf.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/dexseq_exon_counts" : params.outdir },
                    saveAs: { params.saveReference ? it : null }, mode: 'copy'
