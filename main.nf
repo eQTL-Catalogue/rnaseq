@@ -796,7 +796,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, bam_count_exons, leafcutter_bam, mbv_bam
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, leafcutter_bam, mbv_bam
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc, bam_index_genebody
         file "where_are_my_files.txt"
 
@@ -810,6 +810,25 @@ if(params.aligner == 'hisat2'){
         samtools index ${hisat2_bam.baseName}.sorted.bam
         """
     }
+}
+
+process sort_by_name_BAM {
+    tag "${bam_featurecounts.baseName - '.sorted'}"
+
+    input:
+    file bam_featurecounts
+
+    output:
+    file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
+
+    script:
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+    """
+    samtools sort -n \\
+        $bam_featurecounts \\
+        -@ ${task.cpus} $avail_mem \\
+        -o ${bam_featurecounts.baseName}ByName.bam
+    """
 }
 
 /*
@@ -1222,12 +1241,11 @@ process dupradar {
     """
 }
 
-
 /*
  * STEP 8 Feature counts
  */
 process featureCounts {
-    tag "${bam_featurecounts.baseName - '.sorted'}"
+    tag "${bam_featurecounts_sorted.baseName - '.sortedByName'}"
     publishDir "${params.outdir}/featureCounts", mode: 'copy',
         saveAs: {filename ->
             if (filename.indexOf("biotype_counts") > 0) "biotype_counts/$filename"
@@ -1237,14 +1255,14 @@ process featureCounts {
         }
 
     input:
-    file bam_featurecounts
+    file bam_featurecounts_sorted
     file gtf from gtf_featureCounts.collect()
     file biotypes_header from ch_biotypes_header.collect()
 
     output:
-    file "${bam_featurecounts.baseName}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
-    file "${bam_featurecounts.baseName}_gene.featureCounts.txt.summary" into featureCounts_logs
-    file "${bam_featurecounts.baseName}_biotype_counts*mqc.{txt,tsv}" into featureCounts_biotype
+    file "${sample_name}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
+    file "${sample_name}_gene.featureCounts.txt.summary" into featureCounts_logs
+    file "${sample_name}_biotype_counts*mqc.{txt,tsv}" into featureCounts_biotype
 
     script:
     def featureCounts_direction = 0
@@ -1255,12 +1273,12 @@ process featureCounts {
         featureCounts_direction = 2
     }
     // Try to get real sample name
-    sample_name = bam_featurecounts.baseName - 'Aligned.sortedByCoord.out'
+    sample_name = bam_featurecounts_sorted.baseName - '.sortedByName'
     """
-    featureCounts -a $gtf -g gene_id -o ${bam_featurecounts.baseName}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts
-    featureCounts -a $gtf -g gene_type -o ${bam_featurecounts.baseName}_biotype.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts
-    cut -f 1,7 ${bam_featurecounts.baseName}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${bam_featurecounts.baseName}_biotype_counts_mqc.txt
-    mqc_features_stat.py ${bam_featurecounts.baseName}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${bam_featurecounts.baseName}_biotype_counts_gs_mqc.tsv
+    featureCounts -a $gtf -g gene_id --donotsort -o ${sample_name}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts_sorted
+    featureCounts -a $gtf -g gene_type --donotsort -o ${sample_name}_biotype.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts_sorted
+    cut -f 1,7 ${sample_name}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${sample_name}_biotype_counts_mqc.txt
+    mqc_features_stat.py ${sample_name}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${sample_name}_biotype_counts_gs_mqc.tsv
     """
 }
 
