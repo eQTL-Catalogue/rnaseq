@@ -1273,10 +1273,11 @@ process featureCounts {
         featureCounts_direction = 2
     }
     // Try to get real sample name
-    sample_name = bam_featurecounts_sorted.baseName - '.sortedByName'
+    sample_name = bam_featurecounts_sorted.baseName - 'ByName'
     """
-    featureCounts -a $gtf -g gene_id --donotsort -o ${sample_name}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction $bam_featurecounts_sorted
-    featureCounts -a $gtf -g gene_type --donotsort -o ${sample_name}_biotype.featureCounts.txt -p -s $featureCounts_direction $bam_featurecounts_sorted
+    mv $bam_featurecounts_sorted ${sample_name}.bam
+    featureCounts -a $gtf -g gene_id --donotsort -o ${sample_name}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction ${sample_name}.bam
+    featureCounts -a $gtf -g gene_type --donotsort -o ${sample_name}_biotype.featureCounts.txt -p -s $featureCounts_direction ${sample_name}.bam
     cut -f 1,7 ${sample_name}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${sample_name}_biotype_counts_mqc.txt
     mqc_features_stat.py ${sample_name}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${sample_name}_biotype_counts_gs_mqc.tsv
     """
