@@ -180,7 +180,7 @@ if( params.gtf ){
         .fromPath(params.gtf)
         .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
         .into { gtf_makeSTARindex; gtf_makeHisatSplicesites; gtf_makeHISATindex; gtf_makeBED12;
-              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_stringtieFPKM; gtf_dexseq }
+              gtf_star; gtf_dupradar; gtf_featureCounts; gtf_dexseq }
 } else if( params.gff ){
   gffFile = Channel.fromPath(params.gff)
                    .ifEmpty { exit 1, "GFF annotation file not found: ${params.gff}" }
@@ -516,7 +516,7 @@ if(params.gff){
 
       output:
       file "${gff.baseName}.gtf" into gtf_makeSTARindex, gtf_makeHisatSplicesites, gtf_makeHISATindex, gtf_makeBED12,
-            gtf_star, gtf_dupradar, gtf_featureCounts, gtf_stringtieFPKM, gtf_dexseq
+            gtf_star, gtf_dupradar, gtf_featureCounts, gtf_dexseq
 
       script:
       """
@@ -712,7 +712,7 @@ if(params.aligner == 'star'){
     star_aligned
         .filter { logs, bams -> check_log(logs) }
         .flatMap {  logs, bams -> bams }
-    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_stringtieFPKM; bam_for_genebody; bam_count_exons }
+    .into { bam_count; bam_rseqc; bam_preseq; bam_markduplicates; bam_featurecounts; bam_for_genebody; bam_count_exons }
 }
 
 
@@ -796,7 +796,7 @@ if(params.aligner == 'hisat2'){
         file wherearemyfiles from ch_where_hisat2_sort.collect()
 
         output:
-        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_stringtieFPKM, bam_for_genebody, leafcutter_bam, mbv_bam
+        file "${hisat2_bam.baseName}.sorted.bam" into bam_count, bam_rseqc, bam_preseq, bam_markduplicates, bam_featurecounts, bam_for_genebody, leafcutter_bam, mbv_bam
         file "${hisat2_bam.baseName}.sorted.bam.bai" into bam_index_rseqc, bam_index_genebody
         file "where_are_my_files.txt"
 
@@ -1302,54 +1302,6 @@ process merge_featureCounts {
     def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
     """
     $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' | sed 's/.sorted.bam//g' | csvtk rename -t -f Geneid -n phenotype_id | csvtk cut -t -f "-gene_name" > merged_gene_counts.txt
-    """
-}
-
-
-/*
- * STEP 10 - stringtie FPKM
- */
-process stringtieFPKM {
-    tag "${bam_stringtieFPKM.baseName - '.sorted'}"
-    publishDir "${params.outdir}/stringtieFPKM", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("transcripts.gtf") > 0) "transcripts/$filename"
-            else if (filename.indexOf("cov_refs.gtf") > 0) "cov_refs/$filename"
-            else if (filename.indexOf("ballgown") > 0) "ballgown/$filename"
-            else "$filename"
-        }
-
-    when:
-    !params.skip_stringtie
-
-    input:
-    file bam_stringtieFPKM
-    file gtf from gtf_stringtieFPKM.collect()
-
-    output:
-    file "${bam_stringtieFPKM.baseName}_transcripts.gtf"
-    file "${bam_stringtieFPKM.baseName}.gene_abund.txt"
-    file "${bam_stringtieFPKM}.cov_refs.gtf"
-    file ".command.log" into stringtie_log
-    file "${bam_stringtieFPKM.baseName}_ballgown"
-
-    script:
-    def st_direction = ''
-    if (forward_stranded && !unstranded){
-        st_direction = "--fr"
-    } else if (reverse_stranded && !unstranded){
-        st_direction = "--rf"
-    }
-    """
-    stringtie $bam_stringtieFPKM \\
-        $st_direction \\
-        -o ${bam_stringtieFPKM.baseName}_transcripts.gtf \\
-        -v \\
-        -G $gtf \\
-        -A ${bam_stringtieFPKM.baseName}.gene_abund.txt \\
-        -C ${bam_stringtieFPKM}.cov_refs.gtf \\
-        -e \\
-        -b ${bam_stringtieFPKM.baseName}_ballgown
     """
 }
 
