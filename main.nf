@@ -89,7 +89,6 @@ def helpMessage() {
       --skip_dupradar               Skip dupRadar (and Picard MarkDups)
       --skip_edger                  Skip edgeR MDS plot and heatmap
       --skip_multiqc                Skip MultiQC
-      --skip_stringtie              Skip Stringtie
 
     AWSBatch options:
       --awsqueue                    The AWSBatch JobQueue that needs to be set when running on AWSBatch
@@ -1354,7 +1353,6 @@ process get_software_versions {
     trim_galore --version &> v_trim_galore.txt
     STAR --version &> v_star.txt
     hisat2 --version &> v_hisat2.txt
-    stringtie --version &> v_stringtie.txt
     preseq &> v_preseq.txt
     read_duplication.py --version &> v_rseqc.txt
     echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
@@ -1412,7 +1410,6 @@ process multiqc {
     file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
     file ('featureCounts/*') from featureCounts_logs.collect()
     file ('featureCounts_biotype/*') from featureCounts_biotype.collect()
-    file ('stringtie/stringtie_log*') from stringtie_log.collect()
     file ('sample_correlation_results/*') from sample_correlation_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
     file ('software_versions/*') from software_versions_yaml.collect()
     file ('workflow_summary/*') from workflow_summary_yaml.collect()
