@@ -822,7 +822,7 @@ process sort_by_name_BAM {
     file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
 
     script:
-    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
     """
     samtools sort -n \\
         $bam_featurecounts \\
