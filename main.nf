@@ -661,7 +661,7 @@ def check_log(logs) {
         return true
     }
 }
-if(params.aligner == 'star' && !skip_alignment){
+if(params.aligner == 'star' && !params.skip_alignment){
     hisat_stdout = Channel.from(false)
     process star {
         tag "$prefix"
@@ -720,7 +720,7 @@ if(params.aligner == 'star' && !skip_alignment){
 /*
  * STEP 3 - align with HISAT2
  */
-if(params.aligner == 'hisat2' && !skip_alignment){
+if(params.aligner == 'hisat2' && !params.skip_alignment){
     star_log = Channel.from(false)
     process hisat2Align {
         tag "$samplename"
