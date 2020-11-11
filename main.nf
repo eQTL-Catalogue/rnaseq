@@ -36,6 +36,7 @@ def helpMessage() {
       -profile                      Configuration profile to use. uppmax / uppmax_modules / hebbe / docker / aws
 
     Additional quantification options:
+      --skip_alignment              Skip alignment with STAR or HISAT2 (deafault: false)
       --run_salmon                  Runs transcript expression quantification (Salmon)
       --run_txrevise                Runs txrevise quantification (Salmon with custom reference transciptome)
       --run_leafcutter              Runs alternative splicing quantification  (LeafCutter)
@@ -326,6 +327,7 @@ summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
 summary['Output dir']     = params.outdir
+summary['Skip alignment'] = params.skip_alignment
 summary['Run salmon']     = params.run_salmon
 summary['Run exon quant'] = params.run_exon_quant
 summary['Run leafcutter'] = params.run_leafcutter
@@ -659,7 +661,7 @@ def check_log(logs) {
         return true
     }
 }
-if(params.aligner == 'star'){
+if(params.aligner == 'star' && !skip_alignment){
     hisat_stdout = Channel.from(false)
     process star {
         tag "$prefix"
@@ -718,7 +720,7 @@ if(params.aligner == 'star'){
 /*
  * STEP 3 - align with HISAT2
  */
-if(params.aligner == 'hisat2'){
+if(params.aligner == 'hisat2' && !skip_alignment){
     star_log = Channel.from(false)
     process hisat2Align {
         tag "$samplename"
@@ -809,26 +811,27 @@ if(params.aligner == 'hisat2'){
         samtools index ${hisat2_bam.baseName}.sorted.bam
         """
     }
+
+    process sort_by_name_BAM {
+        tag "${bam_featurecounts.baseName - '.sorted'}"
+
+        input:
+        file bam_featurecounts
+
+        output:
+        file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
+
+        script:
+        def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
+        """
+        samtools sort -n \\
+            $bam_featurecounts \\
+            -@ ${task.cpus} $avail_mem \\
+            -o ${bam_featurecounts.baseName}ByName.bam
+        """
+    }
 }
 
-process sort_by_name_BAM {
-    tag "${bam_featurecounts.baseName - '.sorted'}"
-
-    input:
-    file bam_featurecounts
-
-    output:
-    file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
-
-    script:
-    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
-    """
-    samtools sort -n \\
-        $bam_featurecounts \\
-        -@ ${task.cpus} $avail_mem \\
-        -o ${bam_featurecounts.baseName}ByName.bam
-    """
-}
 
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
