@@ -811,27 +811,29 @@ if(params.aligner == 'hisat2' && !params.skip_alignment){
         samtools index ${hisat2_bam.baseName}.sorted.bam
         """
     }
-
-    process sort_by_name_BAM {
-        tag "${bam_featurecounts.baseName - '.sorted'}"
-
-        input:
-        file bam_featurecounts
-
-        output:
-        file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
-
-        script:
-        def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
-        """
-        samtools sort -n \\
-            $bam_featurecounts \\
-            -@ ${task.cpus} $avail_mem \\
-            -o ${bam_featurecounts.baseName}ByName.bam
-        """
-    }
 }
 
+process sort_by_name_BAM {
+    tag "${bam_featurecounts.baseName - '.sorted'}"
+
+    when:
+    !params.skip_alignment
+
+    input:
+    file bam_featurecounts
+
+    output:
+    file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
+
+    script:
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
+    """
+    samtools sort -n \\
+        $bam_featurecounts \\
+        -@ ${task.cpus} $avail_mem \\
+        -o ${bam_featurecounts.baseName}ByName.bam
+    """
+}
 
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
@@ -911,7 +913,7 @@ if(params.run_salmon || params.run_txrevise ){
 /*
  * Leafcutter quantification preparation step
  */
-if(params.run_leafcutter){
+if(params.run_leafcutter && !params.skip_alignment){
     process leafcutter_bam_to_junc {
         tag "${leafcutter_bam.baseName}"
         
@@ -932,7 +934,7 @@ if(params.run_leafcutter){
 /*
  * Leafcutter quantification step
  */
-if(params.run_leafcutter){
+if(params.run_leafcutter && !params.skip_alignment){
     process leafcutter_cluster_junctions {
         tag "${junc_files.baseName}"
         publishDir "${params.outdir}/leafcutter", mode: 'copy'
@@ -957,7 +959,7 @@ if(params.run_leafcutter){
 /*
  * Quantify exon expression - featureCounts (exon level)
  */
-if (params.run_exon_quant){
+if (params.run_exon_quant && !params.skip_alignment){
     process count_exons {
         tag "${bam.simpleName}"
         publishDir "${params.outdir}/dexseq_exon_counts/quant_files", mode: 'copy'
@@ -985,7 +987,7 @@ if (params.run_exon_quant){
 /*
  * Merge exon counts files
  */
-if(params.run_exon_quant){
+if(params.run_exon_quant && !params.skip_alignment){
     process exon_count_merge {
         tag "merge exon ${input_files.size()} files"
         publishDir "${params.outdir}/dexseq_exon_counts", mode: 'copy'
@@ -1009,7 +1011,7 @@ if(params.run_exon_quant){
 /*
  * Run QTLtools MBV
  */
-if(params.run_mbv){
+if(params.run_mbv && !params.skip_alignment){
     process run_mbv {
         tag "${mbv_bam.simpleName}"
         publishDir "${params.outdir}/MBV", mode: 'copy'
@@ -1255,6 +1257,9 @@ process featureCounts {
             else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
             else "$filename"
         }
+    
+    when:
+    !params.skip_alignment
 
     input:
     file bam_featurecounts_sorted
@@ -1292,6 +1297,9 @@ process merge_featureCounts {
     tag "merge ${input_files.size()} files"
     publishDir "${params.outdir}/featureCounts", mode: 'copy'
 
+    when:
+    !params.skip_alignment
+
     input:
     file input_files from featureCounts_to_merge.toSortedList()
 
@@ -1315,7 +1323,7 @@ process sample_correlation {
     publishDir "${params.outdir}/sample_correlation", mode: 'copy'
 
     when:
-    !params.skip_qc && !params.skip_edger
+    !params.skip_qc && !params.skip_edger && !params.skip_alignment
 
     input:
     file input_files from geneCounts.collect()
