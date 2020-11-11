@@ -813,27 +813,27 @@ if(params.aligner == 'hisat2' && !params.skip_alignment){
     }
 }
 
-process sort_by_name_BAM {
-    tag "${bam_featurecounts.baseName - '.sorted'}"
+if(!params.skip_alignment){
+    process sort_by_name_BAM {
+        tag "${bam_featurecounts.baseName - '.sorted'}"
 
-    when:
-    !params.skip_alignment
+        input:
+        file bam_featurecounts
 
-    input:
-    file bam_featurecounts
+        output:
+        file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
 
-    output:
-    file "${bam_featurecounts.baseName}ByName.bam" into bam_featurecounts_sorted, bam_count_exons
-
-    script:
-    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
-    """
-    samtools sort -n \\
-        $bam_featurecounts \\
-        -@ ${task.cpus} $avail_mem \\
-        -o ${bam_featurecounts.baseName}ByName.bam
-    """
+        script:
+        def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
+        """
+        samtools sort -n \\
+            $bam_featurecounts \\
+            -@ ${task.cpus} $avail_mem \\
+            -o ${bam_featurecounts.baseName}ByName.bam
+        """
+    }
 }
+
 
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
