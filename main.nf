@@ -36,9 +36,9 @@ def helpMessage() {
       -profile                      Configuration profile to use. uppmax / uppmax_modules / hebbe / docker / aws
 
     Additional quantification options:
-      --run_tx_exp_quant            Runs transcript expression quantification (Salmon)
-      --run_txrevise                Runs TxRevise quantification (Salmon with custom reference transciptome)
-      --run_splicing_exp_quant      Runs alternative splicing quantification  (LeafCutter)
+      --run_salmon                  Runs transcript expression quantification (Salmon)
+      --run_txrevise                Runs txrevise quantification (Salmon with custom reference transciptome)
+      --run_leafcutter              Runs alternative splicing quantification  (LeafCutter)
       --run_exon_quant              Runs exon quantification (DEXseq)
 
     Options:
@@ -203,9 +203,9 @@ if( workflow.profile == 'uppmax' || workflow.profile == 'uppmax-devel' ){
     if ( !params.project ) exit 1, "No UPPMAX project ID found! Use --project"
 }
 
-if(params.run_tx_exp_quant || params.run_txrevise) { Channel.empty().set { salmon_fasta_ch } }
+if(params.run_salmon || params.run_txrevise) { Channel.empty().set { salmon_fasta_ch } }
 
-if(params.run_tx_exp_quant){
+if(params.run_salmon){
     Channel
         .fromPath(params.tx_fasta)
         .ifEmpty { exit 1, "Transcript fasta file is unreachable: ${params.tx_fasta}" }
@@ -326,10 +326,10 @@ summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
 summary['Output dir']     = params.outdir
-summary['Run tx quant']         = params.run_tx_exp_quant
-summary['Run exon quant']       = params.run_exon_quant
-summary['Run spl quant']        = params.run_splicing_exp_quant
-summary['Run TxRev quant']      = params.run_txrevise
+summary['Run salmon']     = params.run_salmon
+summary['Run exon quant'] = params.run_exon_quant
+summary['Run leafcutter'] = params.run_leafcutter
+summary['Run txrevise']   = params.run_txrevise
 summary['Working dir']    = workflow.workDir
 summary['Container']      = workflow.container
 if(workflow.revision) summary['Pipeline Release'] = workflow.revision
@@ -478,13 +478,13 @@ if(params.run_txrevise){
     }
 }
 
-if( params.run_tx_exp_quant) { salmon_fasta_ch.mix(tx_fasta_ch).set { salmon_fasta_ch } }
+if( params.run_salmon) { salmon_fasta_ch.mix(tx_fasta_ch).set { salmon_fasta_ch } }
 if( params.run_txrevise) { salmon_fasta_ch.mix(txrevise_fasta_ch).set { salmon_fasta_ch }  }
 
 /*
  * PREPROCESSING - Build Salmon index
  */
-if(params.run_tx_exp_quant || params.run_txrevise ){
+if(params.run_salmon || params.run_txrevise ){
     process makeSalmonIndex {
         tag "${fasta.baseName}"
         publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_index" : params.outdir },
@@ -833,7 +833,7 @@ process sort_by_name_BAM {
 /*
  * STEP 3Salmon.1 - quant transcripts with Salmon
  */
-if(params.run_tx_exp_quant || params.run_txrevise ){
+if(params.run_salmon || params.run_txrevise ){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy',
@@ -879,7 +879,7 @@ if(params.run_tx_exp_quant || params.run_txrevise ){
 /*
  * STEP 3Salmon.2 - merge salmon outputs
  */
-if(params.run_tx_exp_quant || params.run_txrevise ){
+if(params.run_salmon || params.run_txrevise ){
     process salmon_merge {
         tag "merge_salmon_${index}"
         publishDir "${params.outdir}/Salmon/merged_counts/", mode: 'copy',
@@ -908,7 +908,7 @@ if(params.run_tx_exp_quant || params.run_txrevise ){
 /*
  * Leafcutter quantification preparation step
  */
-if(params.run_splicing_exp_quant){
+if(params.run_leafcutter){
     process leafcutter_bam_to_junc {
         tag "${leafcutter_bam.baseName}"
         
@@ -929,7 +929,7 @@ if(params.run_splicing_exp_quant){
 /*
  * Leafcutter quantification step
  */
-if(params.run_splicing_exp_quant){
+if(params.run_leafcutter){
     process leafcutter_cluster_junctions {
         tag "${junc_files.baseName}"
         publishDir "${params.outdir}/leafcutter", mode: 'copy'
