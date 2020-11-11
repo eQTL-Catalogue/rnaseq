@@ -323,6 +323,7 @@ if(params.bed12)               summary['BED Annotation']  = params.bed12
 summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
 summary['Save Trimmed']   = params.saveTrimmed ? 'Yes' : 'No'
 summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
+summary['Save Indv Quants']  = params.saveIndividualQuants ? 'Yes' : 'No'
 summary['Max Memory']     = params.max_memory
 summary['Max CPUs']       = params.max_cpus
 summary['Max Time']       = params.max_time
@@ -842,7 +843,7 @@ if(params.run_salmon || params.run_txrevise ){
     process salmon_quant {
         tag "$samplename - ${index.baseName}"
         publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy',
-            saveAs: {filename -> if (filename.indexOf(".quant.sf") > 0) filename else null }
+            saveAs: {filename -> if (params.saveIndividualQuants && filename.indexOf(".quant.sf") > 0) filename else null }
 
         input:
         set samplename, file(reads) from trimmed_reads_salmon
@@ -962,7 +963,10 @@ if(params.run_leafcutter && !params.skip_alignment){
 if (params.run_exon_quant && !params.skip_alignment){
     process count_exons {
         tag "${bam.simpleName}"
-        publishDir "${params.outdir}/dexseq_exon_counts/quant_files", mode: 'copy'
+        
+        publishDir "${params.outdir}/dexseq_exon_counts/quant_files", mode: 'copy',
+            saveAs: {filename -> if (params.saveIndividualQuants && filename.indexOf(".exoncount.txt") > 0) filename else null }
+
 
         input:
         file bam from bam_count_exons
@@ -1032,322 +1036,6 @@ if(params.run_mbv && !params.skip_alignment){
 }
 
 /*
- * STEP 4 - RSeQC analysis
- */
-process rseqc {
-    tag "${bam_rseqc.baseName - '.sorted'}"
-    publishDir "${params.outdir}/rseqc" , mode: 'copy',
-        saveAs: {filename ->
-                 if (filename.indexOf("bam_stat.txt") > 0)                      "bam_stat/$filename"
-            else if (filename.indexOf("infer_experiment.txt") > 0)              "infer_experiment/$filename"
-            else if (filename.indexOf("read_distribution.txt") > 0)             "read_distribution/$filename"
-            else if (filename.indexOf("read_duplication.DupRate_plot.pdf") > 0) "read_duplication/$filename"
-            else if (filename.indexOf("read_duplication.DupRate_plot.r") > 0)   "read_duplication/rscripts/$filename"
-            else if (filename.indexOf("read_duplication.pos.DupRate.xls") > 0)  "read_duplication/dup_pos/$filename"
-            else if (filename.indexOf("read_duplication.seq.DupRate.xls") > 0)  "read_duplication/dup_seq/$filename"
-            else if (filename.indexOf("RPKM_saturation.eRPKM.xls") > 0)         "RPKM_saturation/rpkm/$filename"
-            else if (filename.indexOf("RPKM_saturation.rawCount.xls") > 0)      "RPKM_saturation/counts/$filename"
-            else if (filename.indexOf("RPKM_saturation.saturation.pdf") > 0)    "RPKM_saturation/$filename"
-            else if (filename.indexOf("RPKM_saturation.saturation.r") > 0)      "RPKM_saturation/rscripts/$filename"
-            else if (filename.indexOf("inner_distance.txt") > 0)                "inner_distance/$filename"
-            else if (filename.indexOf("inner_distance_freq.txt") > 0)           "inner_distance/data/$filename"
-            else if (filename.indexOf("inner_distance_plot.r") > 0)             "inner_distance/rscripts/$filename"
-            else if (filename.indexOf("inner_distance_plot.pdf") > 0)           "inner_distance/plots/$filename"
-            else if (filename.indexOf("junction_plot.r") > 0)                   "junction_annotation/rscripts/$filename"
-            else if (filename.indexOf("junction.xls") > 0)                      "junction_annotation/data/$filename"
-            else if (filename.indexOf("splice_events.pdf") > 0)                 "junction_annotation/events/$filename"
-            else if (filename.indexOf("splice_junction.pdf") > 0)               "junction_annotation/junctions/$filename"
-            else if (filename.indexOf("junctionSaturation_plot.pdf") > 0)       "junction_saturation/$filename"
-            else if (filename.indexOf("junctionSaturation_plot.r") > 0)         "junction_saturation/rscripts/$filename"
-            else filename
-        }
-
-    when:
-    !params.skip_qc && !params.skip_rseqc
-
-    input:
-    file bam_rseqc
-    file index from bam_index_rseqc
-    file bed12 from bed_rseqc.collect()
-
-    output:
-    file "*.{txt,pdf,r,xls}" into rseqc_results
-
-    script:
-    """
-    infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
-    junction_annotation.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12
-    bam_stat.py -i $bam_rseqc 2> ${bam_rseqc.baseName}.bam_stat.txt
-    junction_saturation.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12 2> ${bam_rseqc.baseName}.junction_annotation_log.txt
-    inner_distance.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12
-    read_distribution.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.read_distribution.txt
-    read_duplication.py -i $bam_rseqc -o ${bam_rseqc.baseName}.read_duplication
-    """
-}
-
-
-/*
- * Step 4.1 Rseqc create BigWig coverage
- */
-
-process createBigWig {
-    tag "${bam.baseName - 'sortedByCoord.out'}"
-    publishDir "${params.outdir}/bigwig", mode: 'copy'
-
-    when:
-    !params.skip_qc && !params.skip_genebody_coverage
-
-    input:
-    file bam from bam_for_genebody
-    file index from bam_index_genebody
-
-    output:
-    file "*.bigwig" into bigwig_for_genebody
-
-    script:
-    """
-    bamCoverage -b $bam -p ${task.cpus} -o ${bam.baseName}.bigwig
-    """
-}
-/*
- * Step 4.2 Rseqc genebody_coverage
- */
-process genebody_coverage {
-    tag "${bigwig.baseName}"
-       publishDir "${params.outdir}/rseqc" , mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
-            else if (filename.indexOf("geneBodyCoverage.r") > 0)           "geneBodyCoverage/rscripts/$filename"
-            else if (filename.indexOf("geneBodyCoverage.txt") > 0)         "geneBodyCoverage/data/$filename"
-            else if (filename.indexOf("log.txt") > -1) false
-            else filename
-        }
-
-    when:
-    !params.skip_qc && !params.skip_genebody_coverage
-
-    input:
-    file bigwig from bigwig_for_genebody
-    file bed12 from bed_genebody_coverage.collect()
-
-    output:
-    file "*.{txt,pdf,r}" into genebody_coverage_results
-
-    script:
-    """
-    geneBody_coverage2.py \\
-        -i $bigwig \\
-        -o ${bigwig.baseName}.rseqc.txt \\
-        -r $bed12
-    """
-}
-
-/*
- * STEP 5 - preseq analysis
- */
-process preseq {
-    tag "${bam_preseq.baseName - '.sorted'}"
-    publishDir "${params.outdir}/preseq", mode: 'copy'
-
-    when:
-    !params.skip_qc && !params.skip_preseq
-
-    input:
-    file bam_preseq
-
-    output:
-    file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
-
-    script:
-    """
-    preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
-    """
-}
-
-
-/*
- * STEP 6 Mark duplicates
- */
-process markDuplicates {
-    tag "${bam.baseName - '.sorted'}"
-    publishDir "${params.outdir}/markDuplicates", mode: 'copy',
-        saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
-
-    when:
-    !params.skip_qc && !params.skip_dupradar
-
-    input:
-    file bam from bam_markduplicates
-
-    output:
-    file "${bam.baseName}.markDups.bam" into bam_md
-    file "${bam.baseName}.markDups_metrics.txt" into picard_results
-    file "${bam.baseName}.markDups.bam.bai"
-
-    script:
-    if( !task.memory ){
-        log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
-        avail_mem = 3
-    } else {
-        avail_mem = task.memory.toGiga()
-    }
-    """
-    picard -Xmx${avail_mem}g MarkDuplicates \\
-        INPUT=$bam \\
-        OUTPUT=${bam.baseName}.markDups.bam \\
-        METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
-        REMOVE_DUPLICATES=false \\
-        ASSUME_SORTED=true \\
-        PROGRAM_RECORD_ID='null' \\
-        VALIDATION_STRINGENCY=LENIENT
-    samtools index ${bam.baseName}.markDups.bam
-    """
-}
-
-
-/*
- * STEP 7 - dupRadar
- */
-process dupradar {
-
-    tag "${bam_md.baseName - '.sorted.markDups'}"
-    publishDir "${params.outdir}/dupradar", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
-            else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
-            else if (filename.indexOf("_expressionHist.pdf") > 0) "histograms/$filename"
-            else if (filename.indexOf("_dupMatrix.txt") > 0) "gene_data/$filename"
-            else if (filename.indexOf("_duprateExpDensCurve.txt") > 0) "scatter_curve_data/$filename"
-            else if (filename.indexOf("_intercept_slope.txt") > 0) "intercepts_slopes/$filename"
-            else "$filename"
-        }
-
-    when:
-    !params.skip_qc && !params.skip_dupradar
-
-    input:
-    file bam_md
-    file gtf from gtf_dupradar.collect()
-
-    output:
-    file "*.{pdf,txt}" into dupradar_results
-
-    script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
-    def dupradar_direction = 0
-    if (forward_stranded && !unstranded) {
-        dupradar_direction = 1
-    } else if (reverse_stranded && !unstranded){
-        dupradar_direction = 2
-    }
-    def paired = params.singleEnd ? 'single' :  'paired'
-    """
-    dupRadar.r $bam_md $gtf $dupradar_direction $paired ${task.cpus}
-    """
-}
-
-/*
- * STEP 8 Feature counts
- */
-process featureCounts {
-    tag "${bam_featurecounts_sorted.baseName - '.sortedByName'}"
-    publishDir "${params.outdir}/featureCounts", mode: 'copy',
-        saveAs: {filename ->
-            if (filename.indexOf("biotype_counts") > 0) "biotype_counts/$filename"
-            else if (filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
-            else if (filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
-            else "$filename"
-        }
-    
-    when:
-    !params.skip_alignment
-
-    input:
-    file bam_featurecounts_sorted
-    file gtf from gtf_featureCounts.collect()
-    file biotypes_header from ch_biotypes_header.collect()
-
-    output:
-    file "${sample_name}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
-    file "${sample_name}_gene.featureCounts.txt.summary" into featureCounts_logs
-    file "${sample_name}_biotype_counts*mqc.{txt,tsv}" into featureCounts_biotype
-
-    script:
-    def featureCounts_direction = 0
-    def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
-    if (forward_stranded && !unstranded) {
-        featureCounts_direction = 1
-    } else if (reverse_stranded && !unstranded){
-        featureCounts_direction = 2
-    }
-    // Try to get real sample name
-    sample_name = bam_featurecounts_sorted.baseName - 'ByName'
-    """
-    mv $bam_featurecounts_sorted ${sample_name}.bam
-    featureCounts -a $gtf -g gene_id --donotsort -o ${sample_name}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction ${sample_name}.bam
-    featureCounts -a $gtf -g gene_type --donotsort -o ${sample_name}_biotype.featureCounts.txt -p -s $featureCounts_direction ${sample_name}.bam
-    cut -f 1,7 ${sample_name}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${sample_name}_biotype_counts_mqc.txt
-    mqc_features_stat.py ${sample_name}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${sample_name}_biotype_counts_gs_mqc.tsv
-    """
-}
-
-/*
- * STEP 9 - Merge featurecounts
- */
-process merge_featureCounts {
-    tag "merge ${input_files.size()} files"
-    publishDir "${params.outdir}/featureCounts", mode: 'copy'
-
-    when:
-    !params.skip_alignment
-
-    input:
-    file input_files from featureCounts_to_merge.toSortedList()
-
-    output:
-    file 'merged_gene_counts.txt'
-
-    script:
-    //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
-    def single = input_files instanceof Path ? 1 : input_files.size()
-    def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
-    """
-    $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' | sed 's/.sorted.bam//g' | csvtk rename -t -f Geneid -n phenotype_id | csvtk cut -t -f "-gene_name" > merged_gene_counts.txt
-    """
-}
-
-/*
- * STEP 11 - edgeR MDS and heatmap
- */
-process sample_correlation {
-    tag "${input_files[0].toString() - '.sorted_gene.featureCounts.txt' - 'Aligned'}"
-    publishDir "${params.outdir}/sample_correlation", mode: 'copy'
-
-    when:
-    !params.skip_qc && !params.skip_edger && !params.skip_alignment
-
-    input:
-    file input_files from geneCounts.collect()
-    val num_bams from bam_count.count()
-    file mdsplot_header from ch_mdsplot_header
-    file heatmap_header from ch_heatmap_header
-
-    output:
-    file "*.{txt,pdf,csv}" into sample_correlation_results
-
-    when:
-    num_bams > 2 && (!params.sampleLevel)
-
-    script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
-    """
-    edgeR_heatmap_MDS.r $input_files
-    cat $mdsplot_header edgeR_MDS_Aplot_coordinates_mqc.csv >> tmp_file
-    mv tmp_file edgeR_MDS_Aplot_coordinates_mqc.csv
-    cat $heatmap_header log2CPM_sample_distances_mqc.csv >> tmp_file
-    mv tmp_file log2CPM_sample_distances_mqc.csv
-    """
-}
-
-/*
  * Parse software version numbers
  */
 process get_software_versions {
@@ -1364,6 +1052,7 @@ process get_software_versions {
     trim_galore --version &> v_trim_galore.txt
     STAR --version &> v_star.txt
     hisat2 --version &> v_hisat2.txt
+    stringtie --version &> v_stringtie.txt
     preseq &> v_preseq.txt
     read_duplication.py --version &> v_rseqc.txt
     echo \$(bamCoverage --version 2>&1) > v_deeptools.txt
@@ -1375,67 +1064,379 @@ process get_software_versions {
     """
 }
 
-/*
- * Pipeline parameters to go into MultiQC report
- */
-process workflow_summary_mqc {
+if(!params.skip_alignment){
+    /*
+     * STEP 4 - RSeQC analysis
+     */
+    process rseqc {
+        tag "${bam_rseqc.baseName - '.sorted'}"
+        publishDir "${params.outdir}/rseqc" , mode: 'copy',
+            saveAs: {filename ->
+                     if (filename.indexOf("bam_stat.txt") > 0)                      "bam_stat/$filename"
+                else if (filename.indexOf("infer_experiment.txt") > 0)              "infer_experiment/$filename"
+                else if (filename.indexOf("read_distribution.txt") > 0)             "read_distribution/$filename"
+                else if (filename.indexOf("read_duplication.DupRate_plot.pdf") > 0) "read_duplication/$filename"
+                else if (filename.indexOf("read_duplication.DupRate_plot.r") > 0)   "read_duplication/rscripts/$filename"
+                else if (filename.indexOf("read_duplication.pos.DupRate.xls") > 0)  "read_duplication/dup_pos/$filename"
+                else if (filename.indexOf("read_duplication.seq.DupRate.xls") > 0)  "read_duplication/dup_seq/$filename"
+                else if (filename.indexOf("RPKM_saturation.eRPKM.xls") > 0)         "RPKM_saturation/rpkm/$filename"
+                else if (filename.indexOf("RPKM_saturation.rawCount.xls") > 0)      "RPKM_saturation/counts/$filename"
+                else if (filename.indexOf("RPKM_saturation.saturation.pdf") > 0)    "RPKM_saturation/$filename"
+                else if (filename.indexOf("RPKM_saturation.saturation.r") > 0)      "RPKM_saturation/rscripts/$filename"
+                else if (filename.indexOf("inner_distance.txt") > 0)                "inner_distance/$filename"
+                else if (filename.indexOf("inner_distance_freq.txt") > 0)           "inner_distance/data/$filename"
+                else if (filename.indexOf("inner_distance_plot.r") > 0)             "inner_distance/rscripts/$filename"
+                else if (filename.indexOf("inner_distance_plot.pdf") > 0)           "inner_distance/plots/$filename"
+                else if (filename.indexOf("junction_plot.r") > 0)                   "junction_annotation/rscripts/$filename"
+                else if (filename.indexOf("junction.xls") > 0)                      "junction_annotation/data/$filename"
+                else if (filename.indexOf("splice_events.pdf") > 0)                 "junction_annotation/events/$filename"
+                else if (filename.indexOf("splice_junction.pdf") > 0)               "junction_annotation/junctions/$filename"
+                else if (filename.indexOf("junctionSaturation_plot.pdf") > 0)       "junction_saturation/$filename"
+                else if (filename.indexOf("junctionSaturation_plot.r") > 0)         "junction_saturation/rscripts/$filename"
+                else filename
+            }
 
-    when:
-    !params.skip_multiqc
+        when:
+        !params.skip_qc && !params.skip_rseqc
 
-    output:
-    file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
+        input:
+        file bam_rseqc
+        file index from bam_index_rseqc
+        file bed12 from bed_rseqc.collect()
 
-    exec:
-    def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
-    yaml_file.text  = """
-    id: 'nfcore-rnaseq-summary'
-    description: " - this information is collected when the pipeline is started."
-    section_name: 'nfcore/rnaseq Workflow Summary'
-    section_href: 'https://github.com/nf-core/rnaseq'
-    plot_type: 'html'
-    data: |
-        <dl class=\"dl-horizontal\">
-${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-        </dl>
-    """.stripIndent()
-}
+        output:
+        file "*.{txt,pdf,r,xls}" into rseqc_results
 
-/*
- * STEP 12 MultiQC
- */
-process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+        script:
+        """
+        infer_experiment.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.infer_experiment.txt
+        junction_annotation.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12
+        bam_stat.py -i $bam_rseqc 2> ${bam_rseqc.baseName}.bam_stat.txt
+        junction_saturation.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12 2> ${bam_rseqc.baseName}.junction_annotation_log.txt
+        inner_distance.py -i $bam_rseqc -o ${bam_rseqc.baseName}.rseqc -r $bed12
+        read_distribution.py -i $bam_rseqc -r $bed12 > ${bam_rseqc.baseName}.read_distribution.txt
+        read_duplication.py -i $bam_rseqc -o ${bam_rseqc.baseName}.read_duplication
+        """
+    }
 
-    when:
-    !params.skip_multiqc
 
-    input:
-    file multiqc_config from ch_multiqc_config
-    file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
-    file ('trimgalore/*') from trimgalore_results.collect()
-    file ('alignment/*') from alignment_logs.collect()
-    file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
-    file ('rseqc/*') from genebody_coverage_results.collect().ifEmpty([])
-    file ('preseq/*') from preseq_results.collect().ifEmpty([])
-    file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
-    file ('featureCounts/*') from featureCounts_logs.collect()
-    file ('featureCounts_biotype/*') from featureCounts_biotype.collect()
-    file ('sample_correlation_results/*') from sample_correlation_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
-    file ('software_versions/*') from software_versions_yaml.collect()
-    file ('workflow_summary/*') from workflow_summary_yaml.collect()
+    /*
+     * Step 4.1 Rseqc create BigWig coverage
+     */
 
-    output:
-    file "*multiqc_report.html" into multiqc_report
-    file "*_data"
+    process createBigWig {
+        tag "${bam.baseName - 'sortedByCoord.out'}"
+        publishDir "${params.outdir}/bigwig", mode: 'copy'
 
-    script:
-    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    """
-    multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
-    """
+        when:
+        !params.skip_qc && !params.skip_genebody_coverage
+
+        input:
+        file bam from bam_for_genebody
+        file index from bam_index_genebody
+
+        output:
+        file "*.bigwig" into bigwig_for_genebody
+
+        script:
+        """
+        bamCoverage -b $bam -p ${task.cpus} -o ${bam.baseName}.bigwig
+        """
+    }
+    /*
+     * Step 4.2 Rseqc genebody_coverage
+     */
+    process genebody_coverage {
+        tag "${bigwig.baseName}"
+           publishDir "${params.outdir}/rseqc" , mode: 'copy',
+            saveAs: {filename ->
+                if (filename.indexOf("geneBodyCoverage.curves.pdf") > 0)       "geneBodyCoverage/$filename"
+                else if (filename.indexOf("geneBodyCoverage.r") > 0)           "geneBodyCoverage/rscripts/$filename"
+                else if (filename.indexOf("geneBodyCoverage.txt") > 0)         "geneBodyCoverage/data/$filename"
+                else if (filename.indexOf("log.txt") > -1) false
+                else filename
+            }
+
+        when:
+        !params.skip_qc && !params.skip_genebody_coverage
+
+        input:
+        file bigwig from bigwig_for_genebody
+        file bed12 from bed_genebody_coverage.collect()
+
+        output:
+        file "*.{txt,pdf,r}" into genebody_coverage_results
+
+        script:
+        """
+        geneBody_coverage2.py \\
+            -i $bigwig \\
+            -o ${bigwig.baseName}.rseqc.txt \\
+            -r $bed12
+        """
+    }
+
+    /*
+     * STEP 5 - preseq analysis
+     */
+    process preseq {
+        tag "${bam_preseq.baseName - '.sorted'}"
+        publishDir "${params.outdir}/preseq", mode: 'copy'
+
+        when:
+        !params.skip_qc && !params.skip_preseq
+
+        input:
+        file bam_preseq
+
+        output:
+        file "${bam_preseq.baseName}.ccurve.txt" into preseq_results
+
+        script:
+        """
+        preseq lc_extrap -v -B $bam_preseq -o ${bam_preseq.baseName}.ccurve.txt
+        """
+    }
+
+
+    /*
+     * STEP 6 Mark duplicates
+     */
+    process markDuplicates {
+        tag "${bam.baseName - '.sorted'}"
+        publishDir "${params.outdir}/markDuplicates", mode: 'copy',
+            saveAs: {filename -> filename.indexOf("_metrics.txt") > 0 ? "metrics/$filename" : "$filename"}
+
+        when:
+        !params.skip_qc && !params.skip_dupradar
+
+        input:
+        file bam from bam_markduplicates
+
+        output:
+        file "${bam.baseName}.markDups.bam" into bam_md
+        file "${bam.baseName}.markDups_metrics.txt" into picard_results
+        file "${bam.baseName}.markDups.bam.bai"
+
+        script:
+        if( !task.memory ){
+            log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
+            avail_mem = 3
+        } else {
+            avail_mem = task.memory.toGiga()
+        }
+        """
+        picard -Xmx${avail_mem}g MarkDuplicates \\
+            INPUT=$bam \\
+            OUTPUT=${bam.baseName}.markDups.bam \\
+            METRICS_FILE=${bam.baseName}.markDups_metrics.txt \\
+            REMOVE_DUPLICATES=false \\
+            ASSUME_SORTED=true \\
+            PROGRAM_RECORD_ID='null' \\
+            VALIDATION_STRINGENCY=LENIENT
+        samtools index ${bam.baseName}.markDups.bam
+        """
+    }
+
+
+    /*
+     * STEP 7 - dupRadar
+     */
+    process dupradar {
+
+        tag "${bam_md.baseName - '.sorted.markDups'}"
+        publishDir "${params.outdir}/dupradar", mode: 'copy',
+            saveAs: {filename ->
+                if (filename.indexOf("_duprateExpDens.pdf") > 0) "scatter_plots/$filename"
+                else if (filename.indexOf("_duprateExpBoxplot.pdf") > 0) "box_plots/$filename"
+                else if (filename.indexOf("_expressionHist.pdf") > 0) "histograms/$filename"
+                else if (filename.indexOf("_dupMatrix.txt") > 0) "gene_data/$filename"
+                else if (filename.indexOf("_duprateExpDensCurve.txt") > 0) "scatter_curve_data/$filename"
+                else if (filename.indexOf("_intercept_slope.txt") > 0) "intercepts_slopes/$filename"
+                else "$filename"
+            }
+
+        when:
+        !params.skip_qc && !params.skip_dupradar
+
+        input:
+        file bam_md
+        file gtf from gtf_dupradar.collect()
+
+        output:
+        file "*.{pdf,txt}" into dupradar_results
+
+        script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
+        def dupradar_direction = 0
+        if (forward_stranded && !unstranded) {
+            dupradar_direction = 1
+        } else if (reverse_stranded && !unstranded){
+            dupradar_direction = 2
+        }
+        def paired = params.singleEnd ? 'single' :  'paired'
+        """
+        dupRadar.r $bam_md $gtf $dupradar_direction $paired ${task.cpus}
+        """
+    }
+
+    /*
+     * STEP 8 Feature counts
+     */
+    process featureCounts {
+        tag "${bam_featurecounts_sorted.baseName - '.sortedByName'}"
+        publishDir "${params.outdir}/featureCounts", mode: 'copy',
+            saveAs: {filename ->
+                if (params.saveIndividualQuants && filename.indexOf("biotype_counts") > 0) "biotype_counts/$filename"
+                else if (params.saveIndividualQuants && filename.indexOf("_gene.featureCounts.txt.summary") > 0) "gene_count_summaries/$filename"
+                else if (params.saveIndividualQuants && filename.indexOf("_gene.featureCounts.txt") > 0) "gene_counts/$filename"
+                else null
+            }
+
+        input:
+        file bam_featurecounts_sorted
+        file gtf from gtf_featureCounts.collect()
+        file biotypes_header from ch_biotypes_header.collect()
+
+        output:
+        file "${sample_name}_gene.featureCounts.txt" into geneCounts, featureCounts_to_merge
+        file "${sample_name}_gene.featureCounts.txt.summary" into featureCounts_logs
+        file "${sample_name}_biotype_counts*mqc.{txt,tsv}" into featureCounts_biotype
+
+        script:
+        def featureCounts_direction = 0
+        def extraAttributes = params.fcExtraAttributes ? "--extraAttributes ${params.fcExtraAttributes}" : ''
+        if (forward_stranded && !unstranded) {
+            featureCounts_direction = 1
+        } else if (reverse_stranded && !unstranded){
+            featureCounts_direction = 2
+        }
+        // Try to get real sample name
+        sample_name = bam_featurecounts_sorted.baseName - 'ByName'
+        """
+        mv $bam_featurecounts_sorted ${sample_name}.bam
+        featureCounts -a $gtf -g gene_id --donotsort -o ${sample_name}_gene.featureCounts.txt $extraAttributes -p -s $featureCounts_direction ${sample_name}.bam
+        featureCounts -a $gtf -g gene_type --donotsort -o ${sample_name}_biotype.featureCounts.txt -p -s $featureCounts_direction ${sample_name}.bam
+        cut -f 1,7 ${sample_name}_biotype.featureCounts.txt | tail -n +3 | cat $biotypes_header - >> ${sample_name}_biotype_counts_mqc.txt
+        mqc_features_stat.py ${sample_name}_biotype_counts_mqc.txt -s $sample_name -f rRNA -o ${sample_name}_biotype_counts_gs_mqc.tsv
+        """
+    }
+
+    /*
+     * STEP 9 - Merge featurecounts
+     */
+    process merge_featureCounts {
+        tag "merge ${input_files.size()} files"
+        publishDir "${params.outdir}/featureCounts", mode: 'copy'
+
+        input:
+        file input_files from featureCounts_to_merge.toSortedList()
+
+        output:
+        file 'merged_gene_counts.txt'
+
+        script:
+        //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
+        def single = input_files instanceof Path ? 1 : input_files.size()
+        def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand,gene_name"'
+        """
+        $merge $input_files | csvtk cut -t -f "-Start,-Chr,-End,-Length,-Strand" | sed 's/Aligned.sortedByCoord.out.markDups.bam//g' | sed 's/.sorted.bam//g' | csvtk rename -t -f Geneid -n phenotype_id | csvtk cut -t -f "-gene_name" > merged_gene_counts.txt
+        """
+    }
+
+    /*
+     * STEP 11 - edgeR MDS and heatmap
+     */
+    process sample_correlation {
+        tag "${input_files[0].toString() - '.sorted_gene.featureCounts.txt' - 'Aligned'}"
+        publishDir "${params.outdir}/sample_correlation", mode: 'copy'
+
+        when:
+        !params.skip_qc && !params.skip_edger
+
+        input:
+        file input_files from geneCounts.collect()
+        val num_bams from bam_count.count()
+        file mdsplot_header from ch_mdsplot_header
+        file heatmap_header from ch_heatmap_header
+
+        output:
+        file "*.{txt,pdf,csv}" into sample_correlation_results
+
+        when:
+        num_bams > 2 && (!params.sampleLevel)
+
+        script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
+        """
+        edgeR_heatmap_MDS.r $input_files
+        cat $mdsplot_header edgeR_MDS_Aplot_coordinates_mqc.csv >> tmp_file
+        mv tmp_file edgeR_MDS_Aplot_coordinates_mqc.csv
+        cat $heatmap_header log2CPM_sample_distances_mqc.csv >> tmp_file
+        mv tmp_file log2CPM_sample_distances_mqc.csv
+        """
+    }
+
+    /*
+     * Pipeline parameters to go into MultiQC report
+     */
+    process workflow_summary_mqc {
+    
+        when:
+        !params.skip_multiqc
+    
+        output:
+        file 'workflow_summary_mqc.yaml' into workflow_summary_yaml
+    
+        exec:
+        def yaml_file = task.workDir.resolve('workflow_summary_mqc.yaml')
+        yaml_file.text  = """
+        id: 'nfcore-rnaseq-summary'
+        description: " - this information is collected when the pipeline is started."
+        section_name: 'nfcore/rnaseq Workflow Summary'
+        section_href: 'https://github.com/nf-core/rnaseq'
+        plot_type: 'html'
+        data: |
+            <dl class=\"dl-horizontal\">
+    ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+            </dl>
+        """.stripIndent()
+    }
+    
+    /*
+     * STEP 12 MultiQC
+     */
+    process multiqc {
+        publishDir "${params.outdir}/MultiQC", mode: 'copy'
+    
+        when:
+        !params.skip_multiqc
+    
+        input:
+        file multiqc_config from ch_multiqc_config
+        file (fastqc:'fastqc/*') from fastqc_results.collect().ifEmpty([])
+        file ('trimgalore/*') from trimgalore_results.collect()
+        file ('alignment/*') from alignment_logs.collect()
+        file ('rseqc/*') from rseqc_results.collect().ifEmpty([])
+        file ('rseqc/*') from genebody_coverage_results.collect().ifEmpty([])
+        file ('preseq/*') from preseq_results.collect().ifEmpty([])
+        file ('dupradar/*') from dupradar_results.collect().ifEmpty([])
+        file ('featureCounts/*') from featureCounts_logs.collect().ifEmpty([])
+        file ('featureCounts_biotype/*') from featureCounts_biotype.collect().ifEmpty([])
+        file ('sample_correlation_results/*') from sample_correlation_results.collect().ifEmpty([]) // If the Edge-R is not run create an Empty array
+        file ('software_versions/*') from software_versions_yaml.collect()
+        file ('workflow_summary/*') from workflow_summary_yaml.collect()
+    
+        output:
+        file "*multiqc_report.html" into multiqc_report
+        file "*_data"
+    
+        script:
+        rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+        rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+        """
+        multiqc . -f $rtitle $rfilename --config $multiqc_config \\
+            -m custom_content -m picard -m preseq -m rseqc -m featureCounts -m hisat2 -m star -m cutadapt -m fastqc
+        """
+    }
 }
 
 /*
