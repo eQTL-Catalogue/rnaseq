@@ -27,3 +27,4 @@ dependencies:
   - multiqc=1.7
   - bioconda::salmon=0.13.1
   - bioconda::htseq=0.11.2
+  - bioconda::cutadapt=2.9
