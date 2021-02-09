@@ -490,8 +490,6 @@ if( params.run_txrevise) { salmon_fasta_ch.mix(txrevise_fasta_ch).set { salmon_f
 if(params.run_salmon || params.run_txrevise ){
     process makeSalmonIndex {
         tag "${fasta.baseName}"
-        publishDir path: { params.saveReference ? "${params.outdir}/Salmon/salmon_index" : params.outdir },
-                   saveAs: { params.saveReference ? it : null }, mode: 'copy'
         
         input:
         file fasta from salmon_fasta_ch
