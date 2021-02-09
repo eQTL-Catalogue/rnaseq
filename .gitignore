@@ -5,3 +5,4 @@ results*/
 .DS_Store
 tests/test_data/ngi-rna_test_set
 annotation/*
+singularity_img/
