@@ -8,4 +8,8 @@ workflow {
     align_reads()
     count_features(align_reads.out.bam_sorted_by_name)
 
+    if (params.run_exon_quant) {
+        include {quant_exons} from './workflows/exonQuant_wf'
+        quant_exons(align_reads.out.bam_sorted_by_name)
+    }
 }
