@@ -42,6 +42,7 @@ workflow align_reads {
 
     emit:
         bam_sorted_by_name = sort_by_name_BAM.out.bam_sorted_by_name
+        trimmed_reads = trim_galore.out.trimmed_reads
 }
 
 

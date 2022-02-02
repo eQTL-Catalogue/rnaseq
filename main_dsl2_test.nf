@@ -12,4 +12,10 @@ workflow {
         include {quant_exons} from './workflows/exonQuant_wf'
         quant_exons(align_reads.out.bam_sorted_by_name)
     }
+
+    if (params.run_salmon) {
+        include {quant_tx} from './workflows/txQuant_wf'
+        quant_tx(align_reads.out.trimmed_reads)
+    }
+
 }
