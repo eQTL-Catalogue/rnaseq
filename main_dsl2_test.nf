@@ -18,4 +18,8 @@ workflow {
         quant_tx(align_reads.out.trimmed_reads)
     }
 
+    if (params.run_txrevise) {
+        include {quant_txrev} from './workflows/txrevQuant_wf'
+        quant_txrev(align_reads.out.trimmed_reads)
+    }
 }
