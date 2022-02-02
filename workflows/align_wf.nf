@@ -26,17 +26,22 @@ Channel
     .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
     .set { gtf_file }
 
-include { makeHisatSplicesites; trim_galore; hisat2Align; hisat2_sortOutput } from '../modules/align'
+include { sort_by_name_BAM; makeHisatSplicesites; trim_galore; hisat2Align; hisat2_sortOutput } from '../modules/align'
 
 workflow {
     align_reads()
 }
 
 workflow align_reads {
-    makeHisatSplicesites(gtf_file.collect())
-    trim_galore(raw_reads_trimgalore)
-    hisat2Align(trim_galore.out.trimmed_reads, hs2_indices.collect(), makeHisatSplicesites.out.collect())
-    hisat2_sortOutput(hisat2Align.out.hisat2_bam_ch)
+    main:
+        makeHisatSplicesites(gtf_file.collect())
+        trim_galore(raw_reads_trimgalore)
+        hisat2Align(trim_galore.out.trimmed_reads, hs2_indices.collect(), makeHisatSplicesites.out.collect())
+        hisat2_sortOutput(hisat2Align.out.hisat2_bam_ch)
+        sort_by_name_BAM(hisat2_sortOutput.out.sorted_bam_ch)
+
+    emit:
+        bam_sorted_by_name = sort_by_name_BAM.out.bam_sorted_by_name
 }
 
 

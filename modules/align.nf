@@ -128,3 +128,21 @@ process hisat2_sortOutput {
     samtools index ${hisat2_bam.baseName}.sorted.bam
     """
 }
+
+process sort_by_name_BAM {
+    tag "${bam.baseName - '.sorted'}"
+
+    input:
+    path bam
+
+    output:
+    path "${bam.baseName}ByName.bam", emit: bam_sorted_by_name
+    script:
+    def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
+    """
+    samtools sort -n \\
+        $bam \\
+        -@ ${task.cpus} $avail_mem \\
+        -o ${bam.baseName}ByName.bam
+    """
+}
