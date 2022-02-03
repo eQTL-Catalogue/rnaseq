@@ -32,3 +32,20 @@ process createBigWig {
     bamCoverage -b $bam -p ${task.cpus} -o ${bam.simpleName}.bigwig
     """
 }
+
+process run_mbv {
+    tag "${bam.simpleName}"
+    publishDir "${params.outdir}/MBV", mode: 'copy'
+
+    input:
+    tuple file(bam), file(bam_index)
+    path vcf 
+
+    output:
+    path "${bam.simpleName}.mbv_output.txt"
+
+    script:
+    """
+    QTLtools mbv --vcf $vcf --bam $bam --out ${bam.simpleName}.mbv_output.txt
+    """
+}

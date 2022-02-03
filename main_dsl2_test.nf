@@ -32,4 +32,9 @@ workflow {
         include { createBigWig } from './modules/utils'
         createBigWig(align_reads.out.bam_sorted_indexed)
     }
+
+    if (params.run_mbv){
+        include { generate_mbv } from './workflows/mbv_wf'
+        generate_mbv(align_reads.out.bam_sorted_indexed)
+    }
 }

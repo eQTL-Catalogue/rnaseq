@@ -14,6 +14,8 @@ nextflow run main_dsl2_test.nf\
  --run_exon_quant\
  --run_salmon\
  --run_txrevise\
+ --run_mbv\
+ --mbv_vcf /gpfs/space/projects/eQTLCatalogue/test_data/Alasoo_2018_2samples_chr21/vcf/Alasoo_2018_2genotypes_vcf.gz\
  --gtf /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\
  --fasta /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
  --tx_fasta /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.transcripts.fa\
