@@ -49,3 +49,24 @@ process run_mbv {
     QTLtools mbv --vcf $vcf --bam $bam --out ${bam.simpleName}.mbv_output.txt
     """
 }
+
+process sample_correlation {
+    publishDir "${params.outdir}/sample_correlation", mode: 'copy'
+
+    input:
+    path input_files 
+    path mdsplot_header
+    path heatmap_header
+
+    output:
+    path "*.{txt,pdf,csv}" 
+
+    script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
+    """
+    edgeR_heatmap_MDS.r $input_files
+    cat $mdsplot_header edgeR_MDS_Aplot_coordinates_mqc.csv >> tmp_file
+    mv tmp_file edgeR_MDS_Aplot_coordinates_mqc.csv
+    cat $heatmap_header log2CPM_sample_distances_mqc.csv >> tmp_file
+    mv tmp_file log2CPM_sample_distances_mqc.csv
+    """
+}

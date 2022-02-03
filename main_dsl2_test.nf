@@ -37,4 +37,11 @@ workflow {
         include { generate_mbv } from './workflows/mbv_wf'
         generate_mbv(align_reads.out.bam_sorted_indexed)
     }
+
+    if (params.run_sample_corr) { 
+        include { sample_correlation } from './modules/utils'
+        sample_correlation(count_features.out.gene_feature_counts.collect(),
+                            Channel.fromPath("$baseDir/assets/mdsplot_header.txt"),
+                            Channel.fromPath("$baseDir/assets/heatmap_header.txt"))
+    }
 }

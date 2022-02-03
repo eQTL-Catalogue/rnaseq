@@ -20,6 +20,9 @@ workflow count_features {
     main:
         featureCounts(bam_sorted_by_name, gtf_file.collect(), ch_biotypes_header.collect())
         merge_featureCounts(featureCounts.out.gene_feature_counts.toSortedList())
+
+    emit:
+        gene_feature_counts = featureCounts.out.gene_feature_counts
 }
 
 
