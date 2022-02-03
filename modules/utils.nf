@@ -16,3 +16,19 @@ process gff_to_fasta {
     gffread -w ${txrevise_gff.baseName}.fa -g $genome_fasta $txrevise_gff
     """
 }
+
+process createBigWig {
+    tag "${bam.simpleName}"
+    publishDir "${params.outdir}/bigwig", mode: 'copy'
+
+    input:
+    tuple file(bam), file(bam_index)
+
+    output:
+    path "*.bigwig" 
+
+    script:
+    """
+    bamCoverage -b $bam -p ${task.cpus} -o ${bam.simpleName}.bigwig
+    """
+}

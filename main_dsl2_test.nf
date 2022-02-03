@@ -27,4 +27,9 @@ workflow {
         include {quant_leafcutter} from './workflows/leafcutter_wf'
         quant_leafcutter(align_reads.out.bam_sorted_indexed)
     }
+
+    if (params.generate_bigwig) {
+        include { createBigWig } from './modules/utils'
+        createBigWig(align_reads.out.bam_sorted_indexed)
+    }
 }
