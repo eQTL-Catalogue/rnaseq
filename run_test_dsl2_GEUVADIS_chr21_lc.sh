@@ -15,16 +15,13 @@ module load nextflow
 module load any/singularity/3.5.3
 module load squashfs/4.4
 
-
 nextflow run main_dsl2_test.nf\
  -profile tartu_hpc\
  --readPathsFile /gpfs/space/home/kerimov/rnaseq/data/readPathsFile_GEUVADIS_chr21_all.tsv\
- --reverse_stranded\
+ --unstranded\
  --hisat2_index /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/hisat2_index_v96/Homo_sapiens.GRCh38.dna.primary_assembly\
  --aligner 'hisat2'\
- --skip_qc\
  --skip_multiqc\
- --skip_stringtie\
  --saveReference\
  --saveTrimmed\
  --saveAlignedIntermediates\
