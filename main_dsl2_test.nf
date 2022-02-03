@@ -22,4 +22,9 @@ workflow {
         include {quant_txrev} from './workflows/txrevQuant_wf'
         quant_txrev(align_reads.out.trimmed_reads)
     }
+
+    if (params.run_leafcutter) {
+        include {quant_leafcutter} from './workflows/leafcutter_wf'
+        quant_leafcutter(align_reads.out.bam_sorted_indexed)
+    }
 }

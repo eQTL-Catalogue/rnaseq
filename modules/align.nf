@@ -115,8 +115,7 @@ process hisat2_sortOutput {
     path hisat2_bam
 
     output:
-    path "${hisat2_bam.baseName}.sorted.bam", emit: sorted_bam_ch 
-    path "${hisat2_bam.baseName}.sorted.bam.bai", emit: sorted_bam_index_ch
+    tuple file("${hisat2_bam.baseName}.sorted.bam"), file("${hisat2_bam.baseName}.sorted.bam.bai"), emit: bam_sorted_indexed
 
     script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -133,10 +132,11 @@ process sort_by_name_BAM {
     tag "${bam.baseName - '.sorted'}"
 
     input:
-    path bam
+    tuple file(bam), file(bam_index)
 
     output:
     path "${bam.baseName}ByName.bam", emit: bam_sorted_by_name
+    
     script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''
     """

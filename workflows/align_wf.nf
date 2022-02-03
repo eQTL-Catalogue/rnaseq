@@ -38,11 +38,12 @@ workflow align_reads {
         trim_galore(raw_reads_trimgalore)
         hisat2Align(trim_galore.out.trimmed_reads, hs2_indices.collect(), makeHisatSplicesites.out.collect())
         hisat2_sortOutput(hisat2Align.out.hisat2_bam_ch)
-        sort_by_name_BAM(hisat2_sortOutput.out.sorted_bam_ch)
+        sort_by_name_BAM(hisat2_sortOutput.out.bam_sorted_indexed)
 
     emit:
         bam_sorted_by_name = sort_by_name_BAM.out.bam_sorted_by_name
         trimmed_reads = trim_galore.out.trimmed_reads
+        bam_sorted_indexed = hisat2_sortOutput.out.bam_sorted_indexed
 }
 
 
