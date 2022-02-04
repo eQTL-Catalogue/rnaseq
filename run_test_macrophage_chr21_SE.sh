@@ -21,7 +21,6 @@ nextflow run main_dsl2_test.nf\
  --singleEnd\
  --reverse_stranded\
  --hisat2_index /gpfs/space/projects/eQTLCatalogue/test_data/index_and_annotation_chr21/hisat2_index/hisat2_index\
- --aligner 'hisat2'\
  --skip_multiqc\
  --saveReference\
  --saveTrimmed\
