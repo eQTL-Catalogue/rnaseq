@@ -9,8 +9,15 @@ process bam_to_junc {
     path "${bam.baseName}.junc", emit: junc
     
     script:
+    // If confused about strands check this: https://rnabio.org/module-09-appendix/0009/12/01/StrandSettings/
+    def leafcutter_strand = 0
+    if (params.forward_stranded && !params.unstranded) {
+        leafcutter_strand = 1
+    } else if (params.reverse_stranded && !params.unstranded){
+        leafcutter_strand = 2
+    }
     """
-    regtools junctions extract -s 0 -a 8 -m 50 -M 500000 $bam -o ${bam.baseName}.junc
+    regtools junctions extract -s $leafcutter_strand -a 8 -m ${params.leafcutter_min_intron_length} -M ${params.leafcutter_max_intron_length} $bam -o ${bam.baseName}.junc
     """
 }
 
@@ -28,7 +35,7 @@ process cluster_introns {
 
     script:
     """
-    leafcutter_cluster_regtools.py -j $junc_files -m 50 -o leafcutter -l 500000 --checkchrom TRUE
+    leafcutter_cluster_regtools.py -j $junc_files -m ${params.leafcutter_min_split_reads} -o leafcutter -l ${params.leafcutter_max_intron_length} --checkchrom
     zcat leafcutter_perind_numers.counts.gz | sed '1s/^/phenotype_id /' | sed 's/.sorted//g' | sed -e 's/ /\t/g' | gzip -c > leafcutter_perind_numers.counts.formatted.gz
     """
 }

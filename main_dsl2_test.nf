@@ -3,10 +3,13 @@ nextflow.enable.dsl=2
 
 workflow {
     include {align_reads} from './workflows/align_wf'
-    include {count_features} from './workflows/featureCounts_wf'
 
     align_reads()
-    count_features(align_reads.out.bam_sorted_by_name)
+    
+    if (params.run_ge_quant){
+        include {count_features} from './workflows/featureCounts_wf'
+        count_features(align_reads.out.bam_sorted_by_name)
+    }
 
     if (params.run_exon_quant) {
         include {quant_exons} from './workflows/exonQuant_wf'
@@ -38,7 +41,7 @@ workflow {
         generate_mbv(align_reads.out.bam_sorted_indexed)
     }
 
-    if (params.run_sample_corr) { 
+    if (params.run_sample_corr && params.run_ge_quant) { 
         include { sample_correlation } from './modules/utils'
         sample_correlation(count_features.out.gene_feature_counts.collect(),
                             Channel.fromPath("$baseDir/assets/mdsplot_header.txt"),
