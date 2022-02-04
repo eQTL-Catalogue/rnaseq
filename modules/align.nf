@@ -54,6 +54,44 @@ process makeHisatSplicesites {
     """
 }
 
+process makeHISATindex {
+    tag "$fasta"
+    publishDir "${params.outdir}/reference_genome/hisat2", mode: 'copy', enabled: params.saveReference
+
+    input:
+    path fasta 
+    path indexing_splicesites 
+    path gtf 
+
+    output:
+    path "${fasta.baseName}.*.ht2"
+
+    script:
+    if( !task.memory ){
+        log.info "[HISAT2 index build] Available memory not known - defaulting to 0. Specify process memory requirements to change this."
+        avail_mem = 0
+    } else {
+        log.info "[HISAT2 index build] Available memory: ${task.memory}"
+        avail_mem = task.memory.toGiga()
+    }
+    if( avail_mem > params.hisatBuildMemory ){
+        log.info "[HISAT2 index build] Over ${params.hisatBuildMemory} GB available, so using splice sites and exons in HISAT2 index"
+        extract_exons = "hisat2_extract_exons.py $gtf > ${gtf.baseName}.hisat2_exons.txt"
+        ss = "--ss $indexing_splicesites"
+        exon = "--exon ${gtf.baseName}.hisat2_exons.txt"
+    } else {
+        log.info "[HISAT2 index build] Less than ${params.hisatBuildMemory} GB available, so NOT using splice sites and exons in HISAT2 index."
+        log.info "[HISAT2 index build] Use --hisatBuildMemory [small number] to skip this check."
+        extract_exons = ''
+        ss = ''
+        exon = ''
+    }
+    """
+    $extract_exons
+    hisat2-build -p ${task.cpus} $ss $exon $fasta ${fasta.baseName}.hisat2_index
+    """
+}
+
 process hisat2Align {
     tag "$samplename"
     publishDir "${params.outdir}/HISAT2/logs/", mode: 'copy', pattern: "*.hisat2_summary.txt"
