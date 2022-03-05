@@ -1,5 +1,5 @@
 process bam_to_junc {
-    container = 'quay.io/karlvaba/leafcutter'
+    container = 'quay.io/eqtlcatalogue/leafcutter:v22.03.p4'
     publishDir "${params.outdir}/leafcutter/juncs", mode: 'copy'
 
     input:
@@ -22,7 +22,7 @@ process bam_to_junc {
 }
 
 process cluster_introns {
-    container = 'quay.io/karlvaba/leafcutter'
+    container = 'quay.io/eqtlcatalogue/leafcutter:v22.03.p4'
     tag "${junc_files.baseName}"
     publishDir "${params.outdir}/leafcutter", mode: 'copy'
 
@@ -35,7 +35,7 @@ process cluster_introns {
 
     script:
     """
-    leafcutter_cluster_regtools.py -j $junc_files -m ${params.leafcutter_min_split_reads} -o leafcutter -l ${params.leafcutter_max_intron_length} --checkchrom
+    leafcutter_cluster_regtools.py -j $junc_files -m ${params.leafcutter_min_split_reads} -o leafcutter -l ${params.leafcutter_max_intron_length} --checkchrom=True
     zcat leafcutter_perind_numers.counts.gz | sed '1s/^/phenotype_id /' | sed 's/.sorted//g' | sed -e 's/ /\t/g' | gzip -c > leafcutter_perind_numers.counts.formatted.gz
     """
 }

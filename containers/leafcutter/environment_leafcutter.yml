@@ -1,0 +1,9 @@
+name: rnaseq-leafcutter
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - bioconda::regtools=0.6.0
+  - bioconda::samtools=1.15
+  - conda-forge::r-rlang=0.4.12
