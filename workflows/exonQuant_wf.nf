@@ -1,8 +1,8 @@
 nextflow.enable.dsl=2
 
 Channel
-    .fromPath( params.gtf )
-    .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+    .fromPath( params.gtf_fc )
+    .ifEmpty { exit 1, "GTF annotation file for featureCounts not found: ${params.gtf_fc}" }
     .set { gtf_file }
 
 include { makeDexSeqExonGFF; count_exons; exon_count_merge } from '../modules/exon_quant'

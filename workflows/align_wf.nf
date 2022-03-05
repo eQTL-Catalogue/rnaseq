@@ -26,8 +26,8 @@ if(params.singleEnd){
 
 
 Channel
-    .fromPath( params.gtf )
-    .ifEmpty { exit 1, "GTF annotation file not found: ${params.gtf}" }
+    .fromPath( params.gtf_hisat2_index )
+    .ifEmpty { exit 1, "GTF annotation file for hisat index not found: ${params.gtf_hisat2_index}" }
     .set { gtf_file }
 
 include { makeHisatSplicesites; trim_galore; makeHISATindex; hisat2Align; hisat2_sortOutput; sort_by_name_BAM } from '../modules/align'

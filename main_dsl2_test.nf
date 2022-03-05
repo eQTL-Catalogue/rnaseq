@@ -28,7 +28,8 @@ def helpMessage() {
       --hisat2_index                Path to HiSAT2 index
       --fasta                       Path to Fasta reference
       --tx_fasta                    Path to transcript fasta reference
-      --gtf                         Path to GTF file
+      --gtf_fc                      Path to GTF file to use with feactureCounts
+      --gtf_hisat2_index            Path to GTF file to build hisat index
       --txrevise_gffs               Path to GFF files for txrevise
       --saveReference               Save the generated reference files the the Results directory.
       --saveTrimmed                 Save trimmed FastQ file intermediates
@@ -76,7 +77,8 @@ def run_info_message() {
   summary["Trim 3' R2"] = params.three_prime_clip_r2
   summary['Aligner'] = "HISAT2"
   if(params.hisat2_index)        summary['HISAT2 Index'] = params.hisat2_index
-  if(params.gtf)                 summary['GTF Annotation']  = params.gtf
+  if(params.gtf_hisat2_index)        summary['GTF HISAT2 Index'] = params.gtf_hisat2_index
+  if(params.gtf_fc)                 summary['GTF Annotation']  = params.gtf_fc
   summary['Save Reference'] = params.saveReference ? 'Yes' : 'No'
   summary['Save Trimmed']   = params.saveTrimmed ? 'Yes' : 'No'
   summary['Save Intermeds'] = params.saveAlignedIntermediates ? 'Yes' : 'No'
