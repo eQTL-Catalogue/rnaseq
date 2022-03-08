@@ -13,7 +13,8 @@ process makeDexSeqExonGFF {
     script:
     """
     cat $gtf | sed 's/chrM/chrMT/;s/chr//' > ${gtf.baseName}.patched_contigs.gtf
-    $baseDir/bin/dexseq/dexseq_prepare_annotation.py ${gtf.baseName}.patched_contigs.gtf ${gtf.baseName}.patched_contigs.DEXSeq.gff
+    $baseDir/bin/dexseq/dexseq_prepare_annotation.py ${gtf.baseName}.patched_contigs.gtf ${gtf.baseName}.patched_contigs_tx.DEXSeq.gff
+    cat ${gtf.baseName}.patched_contigs_tx.DEXSeq.gff | cut -f1 -d";" > ${gtf.baseName}.patched_contigs.DEXSeq.gff
     """
 }
 
