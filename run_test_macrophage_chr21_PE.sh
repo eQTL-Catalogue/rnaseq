@@ -16,23 +16,14 @@ module load any/singularity/3.5.3
 module load squashfs/4.4
 
 nextflow run main_dsl2_test.nf\
- -profile tartu_hpc\
+ -profile eqtl_catalogue\
  --readPathsFile data/readPathsFile_macrophages_PE.tsv\
  --reverse_stranded\
- --hisat2_index /gpfs/space/projects/eQTLCatalogue/test_data/index_and_annotation_chr21/hisat2_index/hisat2_index\
  --skip_multiqc\
  --saveReference\
  --saveTrimmed\
  --saveAlignedIntermediates\
  --saveIndividualQuants\
- --run_exon_quant\
- --run_salmon\
- --run_txrevise\
- --run_leafcutter\
- --gtf /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\
- --fasta /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
- --tx_fasta /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.transcripts.fa\
- --txrevise_gffs "/gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.96.version_1/*.gff3"\
- --fasta /gpfs/space/projects/genomic_references/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
+ --outdir results/test_PE_results2\
  -resume
 
