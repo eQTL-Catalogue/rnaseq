@@ -20,10 +20,7 @@ nextflow run main_dsl2_test.nf\
  --readPathsFile data/readPathsFile_macrophages_PE.tsv\
  --reverse_stranded\
  --skip_multiqc\
- --saveReference\
- --saveTrimmed\
- --saveAlignedIntermediates\
- --saveIndividualQuants\
- --outdir results/test_PE_results2\
+ --run_leafcutter FALSE\
+ --outdir results/test_PE_results_clean_gzip\
  -resume
 
