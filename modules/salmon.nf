@@ -58,14 +58,14 @@ process salmon_quant {
 
 process salmon_merge {
     tag "merge_salmon_${index}"
-    publishDir "${params.outdir}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*TPM.merged.txt"
-    publishDir "${params.outdir}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.txt"
+    publishDir "${params.outdir}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*.TPM.merged.tsv.gz"
+    publishDir "${params.outdir}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.tsv.gz"
 
     input:
     tuple val(index), file(input_files) 
 
     output:
-    path '*merged.txt'
+    path '*.merged.tsv.gz'
 
     script:
     //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
@@ -73,7 +73,7 @@ process salmon_merge {
     def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Name"'
     """
     $merge $input_files | csvtk rename -t -f Name -n phenotype_id > merged_TPMS_NumReads.tsv
-    csvtk cut -t -F -f -"*_NumReads" merged_TPMS_NumReads.tsv | sed 's/_TPM//g' > ${index}.TPM.merged.txt
-    csvtk cut -t -F -f -"*_TPM" merged_TPMS_NumReads.tsv | sed 's/_NumReads//g' > ${index}.NumReads.merged.txt
+    csvtk cut -t -F -f -"*_NumReads" merged_TPMS_NumReads.tsv | sed 's/_TPM//g' | gzip -c > ${index}.TPM.merged.tsv.gz
+    csvtk cut -t -F -f -"*_TPM" merged_TPMS_NumReads.tsv | sed 's/_NumReads//g' | gzip -c > ${index}.NumReads.merged.tsv.gz
     """
 }
