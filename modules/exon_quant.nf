@@ -49,13 +49,13 @@ process exon_count_merge {
     path input_files
 
     output:
-    path 'merged_exon_counts.tsv'
+    path 'merged_exon_counts.tsv.gz'
 
     script:
     //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
     def single = input_files instanceof Path ? 1 : input_files.size()
     def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand"'
     """
-    $merge $input_files | sed 's/.sortedByName.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | csvtk rename -t -f Geneid_Chr_Start_End -n phenotype_id | csvtk cut -t -f "-Chr,-Start,-End,-Strand,-Length" > merged_exon_counts.tsv
+    $merge $input_files | sed 's/.sortedByName.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | csvtk rename -t -f Geneid_Chr_Start_End -n phenotype_id | csvtk cut -t -f "-Chr,-Start,-End,-Strand,-Length" | gzip -c > merged_exon_counts.tsv.gz
     """
 }
