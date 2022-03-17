@@ -9,9 +9,9 @@ unstranded = params.unstranded
  */
 process trim_galore {
     tag "$name"
-    publishDir "${params.outdir}/trim_galore", mode: 'copy', enabled: params.saveTrimmed, pattern: "*fq.gz"
-    publishDir "${params.outdir}/trim_galore/logs", mode: 'copy', pattern: "*trimming_report.txt" 
-    publishDir "${params.outdir}/trim_galore/FastQC", mode: 'copy', pattern: "*_fastqc.{zip,html}"  
+    publishDir "${params.outdir}/trim_galore", mode: 'copy', pattern: "*fq.gz", enabled: params.saveTrimmed
+    publishDir "${params.outdir}/trim_galore/logs", mode: 'copy', pattern: "*trimming_report.txt" , enabled: params.saveInfoLogs
+    publishDir "${params.outdir}/trim_galore/FastQC", mode: 'copy', pattern: "*_fastqc.{zip,html}"  , enabled: params.saveInfoLogs
 
     input:
     tuple val(name), file(reads) 
@@ -94,8 +94,8 @@ process makeHISATindex {
 
 process hisat2Align {
     tag "$samplename"
-    publishDir "${params.outdir}/HISAT2/logs/", mode: 'copy', pattern: "*.hisat2_summary.txt"
-    publishDir "${params.outdir}/HISAT2/", mode: 'copy', pattern: "*.bam", enabled: params.saveAlignedIntermediates
+    publishDir "${params.outdir}/HISAT2/logs/", mode: 'copy', pattern: "*.hisat2_summary.txt", enabled: params.saveInfoLogs
+    publishDir "${params.outdir}/HISAT2/aligned/", mode: 'copy', pattern: "*.bam", enabled: params.saveAlignedIntermediates
 
     input:
     tuple val(samplename), file(reads) 

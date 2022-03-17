@@ -2,9 +2,9 @@ nextflow.enable.dsl=2
 
 process featureCounts {
     tag "${bam_featurecounts_sorted.baseName - '.sortedByName'}"
-    publishDir "${params.outdir}/featureCounts/biotype_counts", mode: 'copy', pattern: "${sample_name}_biotype_counts*mqc.{txt,tsv}"
-    publishDir "${params.outdir}/featureCounts/gene_count_summaries", mode: 'copy', pattern: "*_gene.featureCounts.txt.summary"
-    publishDir "${params.outdir}/featureCounts/gene_counts", mode: 'copy', pattern: "*_gene.featureCounts.txt"
+    publishDir "${params.outdir}/featureCounts/biotype_counts", mode: 'copy', pattern: "${sample_name}_biotype_counts*mqc.{txt,tsv}", enabled: params.saveInfoLogs
+    publishDir "${params.outdir}/featureCounts/gene_count_summaries", mode: 'copy', pattern: "*_gene.featureCounts.txt.summary", enabled: params.saveInfoLogs
+    publishDir "${params.outdir}/featureCounts/gene_counts", mode: 'copy', pattern: "*_gene.featureCounts.txt", enabled: params.saveIndividualQuants
 
     input:
     path bam_featurecounts_sorted

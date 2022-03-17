@@ -1,6 +1,6 @@
 process bam_to_junc {
     container = 'quay.io/eqtlcatalogue/leafcutter:v22.03.p4'
-    publishDir "${params.outdir}/leafcutter/juncs", mode: 'copy'
+    publishDir "${params.outdir}/leafcutter/juncs", mode: 'copy', enabled: params.saveIndividualQuants
 
     input:
     tuple file(bam), file(bam_index)
