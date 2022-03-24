@@ -1,4 +1,3 @@
-eipl_A	data/macrophage_test_data/eipl_A.1.fastq.gz
-eipl_C	data/macrophage_test_data/eipl_C.1.fastq.gz
-fikt_A	data/macrophage_test_data/fikt_A.1.fastq.gz
-fikt_C	data/macrophage_test_data/fikt_C.1.fastq.gz
+eipl_A	https://zenodo.org/record/1173306/files/eipl_A.1.fastq.gz
+eipl_C	https://zenodo.org/record/1173306/files/eipl_C.1.fastq.gz
+fikt_A	https://zenodo.org/record/1173306/files/fikt_A.1.fastq.gz

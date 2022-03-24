@@ -1,19 +1,26 @@
-nextflow run main.nf\
- -profile tartu_hpc\
+#!/bin/bash
+
+#SBATCH --time=05:00:00
+#SBATCH -N 1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=4G
+#SBATCH --job-name="rnaseq_SE"
+#SBATCH --partition=amd
+
+# Load needed system tools (Java 8 is required, one of singularity or anaconda - python 2.7 is needed,
+# depending on the method for dependancy management). The exact names of tool modules might depend on HPC.
+
+module load any/jdk/1.8.0_265
+module load nextflow
+module load any/singularity/3.5.3
+module load squashfs/4.4
+
+nextflow run main_dsl2_test.nf\
+ -profile eqtl_catalogue\
  --readPathsFile data/readPathsFile_macrophages_PE.tsv\
  --reverse_stranded\
- --hisat2_index /gpfs/hpc/projects/genomic_references/annotations/eQTLCatalogue/v0.1/hisat2_index_v96/Homo_sapiens.GRCh38.dna.primary_assembly\
- --aligner 'hisat2'\
- --skip_qc\
  --skip_multiqc\
- --skip_stringtie\
- --saveReference\
- --run_tx_exp_quant\
- --run_splicing_exp_quant\
- --run_exon_quant\
- --saveTrimmed\
- --saveAlignedIntermediates\
- --gtf /gpfs/hpc/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.annotation.no_chr.gtf\
- --fasta /gpfs/hpc/projects/genomic_references/annotations/eQTLCatalogue/v0.1/Homo_sapiens.GRCh38.dna.primary_assembly.fa\
- --tx_fasta /gpfs/hpc/projects/genomic_references/annotations/eQTLCatalogue/v0.1/gencode.v30.transcripts.fa\
+ --run_leafcutter FALSE\
+ --outdir results/test_PE_results_clean_gzip\
  -resume
+
