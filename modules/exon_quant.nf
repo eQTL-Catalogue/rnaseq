@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 process makeDexSeqExonGFF {
     tag "${gtf.baseName}"
     publishDir "${params.outdir}/dexseq_exon_counts", mode: 'copy', enabled: params.saveReference
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
     
     input:
     path gtf 
@@ -21,6 +22,7 @@ process makeDexSeqExonGFF {
 process count_exons {
     tag "${bam.simpleName}"
     publishDir "${params.outdir}/dexseq_exon_counts/quant_files", mode: 'copy', enabled: params.saveIndividualQuants
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path bam 
@@ -44,6 +46,7 @@ process count_exons {
 process exon_count_merge {
     tag "merge exon ${input_files.size()} files"
     publishDir "${params.outdir}/dexseq_exon_counts", mode: 'copy'
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path input_files

@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 process makeSalmonIndex {
     tag "${fasta.baseName}"
     publishDir "${params.outdir}/Salmon/salmon_index", mode: 'copy', enabled: params.saveReference
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path fasta 
@@ -19,6 +20,7 @@ process makeSalmonIndex {
 process salmon_quant {
     tag "$samplename - ${index.baseName}"
     publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy', enabled: params.saveIndividualQuants, pattern: "*.quant.sf"
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     tuple val(samplename), file(reads) 
@@ -60,6 +62,7 @@ process salmon_merge {
     tag "merge_salmon_${index}"
     publishDir "${params.outdir}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*.TPM.merged.tsv.gz"
     publishDir "${params.outdir}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.tsv.gz"
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     tuple val(index), file(input_files) 

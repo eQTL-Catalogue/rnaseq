@@ -3,6 +3,7 @@ nextflow.enable.dsl=2
 process gff_to_fasta {
     tag "${txrevise_gff.baseName}"
     publishDir "${params.outdir}/Salmon/salmon_fasta", mode: 'copy', enabled: params.saveReference
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path txrevise_gff 
@@ -20,6 +21,7 @@ process gff_to_fasta {
 process createBigWig {
     tag "${bam.simpleName}"
     publishDir "${params.outdir}/bigwig", mode: 'copy'
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     tuple file(bam), file(bam_index)
@@ -36,6 +38,7 @@ process createBigWig {
 process run_mbv {
     tag "${bam.simpleName}"
     publishDir "${params.outdir}/MBV", mode: 'copy'
+    container = 'quay.io/eqtlcatalogue/qtltools:v22.03.1'
 
     input:
     tuple file(bam), file(bam_index)
@@ -52,6 +55,7 @@ process run_mbv {
 
 process sample_correlation {
     publishDir "${params.outdir}/sample_correlation", mode: 'copy'
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path input_files 

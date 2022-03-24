@@ -5,6 +5,7 @@ process featureCounts {
     publishDir "${params.outdir}/featureCounts/biotype_counts", mode: 'copy', pattern: "${sample_name}_biotype_counts*mqc.{txt,tsv}", enabled: params.saveInfoLogs
     publishDir "${params.outdir}/featureCounts/gene_count_summaries", mode: 'copy', pattern: "*_gene.featureCounts.txt.summary", enabled: params.saveInfoLogs
     publishDir "${params.outdir}/featureCounts/gene_counts", mode: 'copy', pattern: "*_gene.featureCounts.txt", enabled: params.saveIndividualQuants
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path bam_featurecounts_sorted
@@ -38,6 +39,7 @@ process featureCounts {
 process merge_featureCounts {
     tag "merge ${input_files.size()} files"
     publishDir "${params.outdir}/featureCounts", mode: 'copy'
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     path input_files
