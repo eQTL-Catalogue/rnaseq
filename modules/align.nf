@@ -42,7 +42,7 @@ process trim_galore {
 process makeHisatSplicesites {
     tag "$gtf"
     publishDir "${params.outdir}/reference_genome/", mode: 'copy', enabled: params.saveReference
-    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
+    container = 'quay.io/eqtlcatalogue/rnaseq_hisat2:v22.03.01'
 
     input:
     path gtf 
@@ -59,7 +59,7 @@ process makeHisatSplicesites {
 process makeHISATindex {
     tag "$fasta"
     publishDir "${params.outdir}/reference_genome/hisat2", mode: 'copy', enabled: params.saveReference
-    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
+    container = 'quay.io/eqtlcatalogue/rnaseq_hisat2:v22.03.01'
 
     input:
     path fasta 
@@ -99,7 +99,7 @@ process hisat2Align {
     tag "$samplename"
     publishDir "${params.outdir}/HISAT2/logs/", mode: 'copy', pattern: "*.hisat2_summary.txt", enabled: params.saveInfoLogs
     publishDir "${params.outdir}/HISAT2/aligned/", mode: 'copy', pattern: "*.bam", enabled: params.saveAlignedIntermediates
-    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
+    container = 'quay.io/eqtlcatalogue/rnaseq_hisat2:v22.03.01'
 
     input:
     tuple val(samplename), file(reads) 
