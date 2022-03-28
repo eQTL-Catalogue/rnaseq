@@ -12,14 +12,6 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatic
 The eQTL-Catalogue/rnaseq pipeline comes with documentation about the pipeline, found in the `docs/` directory:
 
 1. [Installation](docs/installation.md)
-2. Pipeline configuration
-    * [Local installation](docs/configuration/local.md)
-    * [Amazon Web Services (aws)](docs/configuration/aws.md)
-    * [Swedish UPPMAX clusters](docs/configuration/uppmax.md)
-    * [Swedish cs3e Hebbe cluster](docs/configuration/c3se.md)
-    * [Tübingen QBiC](docs/configuration/qbic.md)
-    * [CCGA Kiel](docs/configuration/ccga.md)
-    * [Adding your own system](docs/configuration/adding_your_own.md)
 3. [Running the pipeline (Gene expression)](docs/usage.md)
 4. [Running the pipeline (With additional quantification methods)](docs/extra_phenotype_quantification.md)
 5. [Output and how to interpret the results](docs/output.md)
