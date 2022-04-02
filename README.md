@@ -12,17 +12,19 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a bioinformatic
 The eQTL-Catalogue/rnaseq pipeline comes with documentation about the pipeline, found in the `docs/` directory:
 
 1. [Installation](docs/installation.md)
-3. [Running the pipeline (Gene expression)](docs/usage.md)
-4. [Running the pipeline (With additional quantification methods)](docs/extra_phenotype_quantification.md)
-5. [Output and how to interpret the results](docs/output.md)
-6. [Troubleshooting](docs/troubleshooting.md)
+2. [Running the pipeline](docs/usage.md)
+3. [Running the pipeline with test data](docs/test_run.md)
 
 ### General overview 
 The schema shown below represents the high level structure of the pipeline.
 # ![nfcore/rnaseq](docs/images/pipeline_high_level_schema.svg)
 
 ### Credits
-These scripts were originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
+This pipeline is highly influenced by much earlier version of [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline which was originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
+
+New quantification methods (exon expression, transcript usage, transcriptional event usage and intron-splicing usage) are added by [Alasoo Lab](https://kauralasoo.github.io/) within the OpenTargets [eQTL Catalogue](https://www.ebi.ac.uk/eqtl/) project. Please cite [eQTL Catalogue paper](https://www.nature.com/articles/s41588-021-00924-w) if this resource have been used for your research. 
+[https://doi.org/10.1038/s41588-021-00924-w](https://doi.org/10.1038/s41588-021-00924-w)
+
 
 Many thanks to other who have helped out along the way too, including (but not limited to):
 [@Galithil](https://github.com/Galithil),
