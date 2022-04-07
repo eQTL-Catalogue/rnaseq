@@ -31,7 +31,7 @@ process createBigWig {
 
     script:
     """
-    bamCoverage -b $bam -p ${task.cpus} -o ${bam.simpleName}.bigwig
+    bamCoverage -b $bam -p ${task.cpus} -bs 5 -o ${bam.simpleName}.bigwig
     """
 }
 
