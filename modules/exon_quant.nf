@@ -55,10 +55,15 @@ process exon_count_merge {
     path 'merged_exon_counts.tsv.gz'
 
     script:
-    //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
-    def single = input_files instanceof Path ? 1 : input_files.size()
-    def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Geneid,Start,Length,End,Chr,Strand"'
     """
-    $merge $input_files | sed 's/.sortedByName.bam//g' | awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | csvtk rename -t -f Geneid_Chr_Start_End -n phenotype_id | csvtk cut -t -f "-Chr,-Start,-End,-Strand,-Length" | gzip -c > merged_exon_counts.tsv.gz
+    paste -d"\t" $input_files > merged_raw_all.tsv
+    
+    csvtk cut -t -f 1-4 merged_raw_all.tsv | \
+    awk '\$1=\$1"_"\$2"_"\$3"_"\$4' OFS='\t' | \
+    csvtk rename -t -f Geneid_Chr_Start_End -n phenotype_id | \
+    csvtk cut -t -f phenotype_id > phenotype_ids_column.tsv
+
+    csvtk cut -t -F -f "*.sortedByName.bam" merged_raw_all.tsv | sed 's/.sortedByName.bam//g' > merged_exon_no_phenotype_id.tsv
+    paste -d"\t" phenotype_ids_column.tsv merged_exon_no_phenotype_id.tsv | gzip -c > merged_exon_counts.tsv.gz
     """
 }
