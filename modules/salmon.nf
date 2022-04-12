@@ -71,12 +71,12 @@ process salmon_merge {
     path '*.merged.tsv.gz'
 
     script:
-    //if we only have 1 file, just use cat and pipe output to csvtk. Else join all files first, and then remove unwanted column names.
-    def single = input_files instanceof Path ? 1 : input_files.size()
-    def merge = (single == 1) ? 'cat' : 'csvtk join -t -f "Name"'
     """
-    $merge $input_files | csvtk rename -t -f Name -n phenotype_id > merged_TPMS_NumReads.tsv
-    csvtk cut -t -F -f -"*_NumReads" merged_TPMS_NumReads.tsv | sed 's/_TPM//g' | gzip -c > ${index}.TPM.merged.tsv.gz
-    csvtk cut -t -F -f -"*_TPM" merged_TPMS_NumReads.tsv | sed 's/_NumReads//g' | gzip -c > ${index}.NumReads.merged.tsv.gz
+    paste -d"\t" $input_files > merged_raw_all.tsv
+    csvtk cut -t -f 1 merged_raw_all.tsv | csvtk rename -t -f Name -n phenotype_id > phenotype_ids_column.tsv
+    csvtk cut -t -F -f "*_TPM" merged_raw_all.tsv | sed 's/_TPM//g' > gencode.v39.transcripts.TPM_only.merged.tsv
+    csvtk cut -t -F -f "*_NumReads" merged_raw_all.tsv | sed 's/_NumReads//g' > gencode.v39.transcripts.NumReads_only.merged.tsv
+    paste -d"\t" phenotype_ids_column.tsv gencode.v39.transcripts.TPM_only.merged.tsv | gzip -c > ${index}.TPM.merged.tsv.gz
+    paste -d"\t" phenotype_ids_column.tsv gencode.v39.transcripts.NumReads_only.merged.tsv | gzip -c > ${index}.NumReads.merged.tsv.gz
     """
 }
