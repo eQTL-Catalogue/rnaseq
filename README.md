@@ -20,7 +20,7 @@ The schema shown below represents the high level structure of the pipeline.
 # ![nfcore/rnaseq](docs/images/pipeline_high_level_schema.svg)
 
 ### Credits
-This pipeline is highly influenced by much earlier version of [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline which was originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
+This pipeline is highly influenced by much earlier version of the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline which was originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
 
 New quantification methods (exon expression, transcript usage, transcriptional event usage and intron-splicing usage) are added by [Alasoo Lab](https://kauralasoo.github.io/) within the OpenTargets [eQTL Catalogue](https://www.ebi.ac.uk/eqtl/) project. Please cite [eQTL Catalogue paper](https://www.nature.com/articles/s41588-021-00924-w) if this resource have been used for your research. 
 [https://doi.org/10.1038/s41588-021-00924-w](https://doi.org/10.1038/s41588-021-00924-w)
