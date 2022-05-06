@@ -17,7 +17,7 @@ process merge_fastq{
 
     script:
     """
-    zcat $fastq_files | gzip > ${sample_id}_${read_pair}.fastq.gz
+    zcat ${fastq_files.join(' ')} | gzip > ${sample_id}_${read_pair}.fastq.gz
     """
 }
 
