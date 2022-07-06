@@ -7,7 +7,7 @@ def helpMessage() {
     Usage:
 
     Mandatory arguments:
-      --readPathFile                Tab-seperated file with sample names and path to the fastq files. (Used if --reads not provided.)
+      --readPathsFile               Tab-seperated file with sample names and path to the fastq files. (Used if --reads not provided.)
       -profile                      Configuration profile to use. tartu_hpc / singularity / docker / test 
 
     Additional quantification options:
