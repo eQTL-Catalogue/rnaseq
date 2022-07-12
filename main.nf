@@ -93,7 +93,6 @@ def run_info_message() {
   summary['Run leafcutter'] = params.run_leafcutter
   summary['Run txrevise']   = params.run_txrevise
   summary['Working dir']    = workflow.workDir
-  summary['Container']      = workflow.container
   if(workflow.revision) summary['Pipeline Release'] = workflow.revision
   summary['Current home']   = "$HOME"
   summary['Current user']   = "$USER"
