@@ -17,7 +17,7 @@ The eQTL-Catalogue/rnaseq pipeline comes with documentation about the pipeline, 
 
 ### General overview 
 The schema shown below represents the high level structure of the pipeline.
-# ![nfcore/rnaseq](docs/images/pipeline_high_level_schema.svg)
+# ![eQTL-Catalogue/rnaseq](docs/metromap/metromap.png)
 
 ### Credits
 This pipeline is highly influenced by much earlier version of the [nf-core/rnaseq](https://github.com/nf-core/rnaseq) pipeline which was originally written for use at the [National Genomics Infrastructure](https://portal.scilifelab.se/genomics/), part of [SciLifeLab](http://www.scilifelab.se/) in Stockholm, Sweden, by Phil Ewels ([@ewels](https://github.com/ewels)) and Rickard Hammarén ([@Hammarn](https://github.com/Hammarn)).
