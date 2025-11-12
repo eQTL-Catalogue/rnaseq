@@ -13,14 +13,14 @@ if(params.hisat2_index) {
 if(params.singleEnd){
     Channel.fromPath(params.readPathsFile)
     .ifEmpty { error "Cannot find any readPathsFile file in: ${params.readPathsFile}" }
-    .splitCsv(header: false, sep: '\t', strip: true)
-    .map{row -> [ row[0], [ file(row[1]) ] ]}
+    .splitCsv(header: true, sep: '\t', strip: true)
+    .map{row -> [ row.sample_group, row.sample_id, [file(row.fastq1)] ]}
     .set { raw_reads_trimgalore }
 } else {
     Channel.fromPath(params.readPathsFile)
     .ifEmpty { error "Cannot find any readPathsFile file in: ${params.readPathsFile}" }
-    .splitCsv(header: false, sep: '\t', strip: true)
-    .map{row -> [ row[0], [ file(row[1]) , file(row[2]) ] ]}
+    .splitCsv(header: true, sep: '\t', strip: true)
+    .map{row -> [ row.sample_group, row.sample_id, [file(row.fastq1), file(row.fastq2)] ]}
     .set { raw_reads_trimgalore }
 }
 

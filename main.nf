@@ -117,9 +117,10 @@ workflow {
     run_info_message()
     align_reads()
     
-    if (params.run_ge_quant){
+   if (params.run_ge_quant){
         count_features(align_reads.out.bam_sorted_by_name)
     }
+    /*  
 
     if (params.run_exon_quant) {
         quant_exons(align_reads.out.bam_sorted_by_name)
@@ -149,6 +150,6 @@ workflow {
         sample_correlation(count_features.out.gene_feature_counts.collect(),
                             Channel.fromPath("$baseDir/assets/mdsplot_header.txt"),
                             Channel.fromPath("$baseDir/assets/heatmap_header.txt"))
-    }
+    } */
 }
 
