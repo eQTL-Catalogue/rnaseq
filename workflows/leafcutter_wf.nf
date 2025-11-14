@@ -1,6 +1,7 @@
 nextflow.enable.dsl=2
 
 include { bam_to_junc; cluster_introns} from '../modules/leafcutter'
+include { collect_lc_junctions_per_group} from '../modules/utils'
 
 workflow quant_leafcutter {
     take:
@@ -8,6 +9,12 @@ workflow quant_leafcutter {
     
     main:
         bam_to_junc(bam_sorted_indexed)
-        cluster_introns(bam_to_junc.out.junc.map{it.toString()}.collectFile(name: 'junction_files.txt', newLine: true))
+        grouped_juncs = bam_to_junc.out.junc
+            .groupTuple()
+            .map { sample_group, sample_ids, paths ->
+            tuple(sample_group, paths)
+        }
+        collect_lc_junctions_per_group(grouped_juncs)
+        cluster_introns(collect_lc_junctions_per_group.out)
 }
 

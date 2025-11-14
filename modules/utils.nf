@@ -74,3 +74,19 @@ process sample_correlation {
     mv tmp_file log2CPM_sample_distances_mqc.csv
     """
 }
+
+process collect_lc_junctions_per_group {
+    container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
+
+    input:
+    tuple val(sample_group), val(junc_files)
+
+    output:
+    tuple val(sample_group), path("${sample_group}_junction_files.txt")
+
+    script:
+    """
+    # Create a file listing all .junc paths for this group
+    printf "%s\\n" ${junc_files.join(' ')} > ${sample_group}_junction_files.txt
+    """
+}
