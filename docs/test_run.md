@@ -1,5 +1,5 @@
 # Running The pipeline with the test data
-Test data contains 20 open-access pair-end RNAseq samples from [GEUVADIS](https://www.nature.com/articles/nature12531) study.
+Test data contains 6 open-access pair-end RNAseq samples from [GEUVADIS](https://www.nature.com/articles/nature12531) study.
 
 To execute the pipeline with reference and annotation files they should be manually downloaded first:
 ```bash

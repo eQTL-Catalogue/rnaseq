@@ -12,7 +12,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 ## Running the pipeline
 The typical command for running the pipeline is as follows:
 ```bash
-nextflow run main.nf --readPathsFile data/read_pathes_GEUVADIS_GBR_20samples.tsv -profile singularity
+nextflow run main.nf --readPathsFile data/read_paths_GEUVADIS_GBR20.tsv -profile singularity
 ```
 
 Note that the pipeline will create the following files in your working directory:
@@ -77,9 +77,9 @@ Use this to specify the location of your input FastQ files. For example:
 ```bash
 --readPathsFile 'path/to/data/file.tsv
 ```
-This file should have 3 columns for pair-end data and 2 columns for single-end data.
+This file should have 4 columns for pair-end data (with headers: sample_group, sample_id, fastq1, fastq2) and 3 columns for single-end data (with headers: sample_group, sample_id, fastq1).
 Make sure the separator between the column is a tab and not a white-space
-Please see the example of the file [here](../data/read_pathes_GEUVADIS_GBR_20samples.tsv)
+Please see the example of the file [here](../data/read_paths_GEUVADIS_GBR20.tsv)
 
 ### `--singleEnd`
 By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. 
