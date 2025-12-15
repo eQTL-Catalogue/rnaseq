@@ -24,12 +24,10 @@ workflow quant_exons {
                 def paired = [sample_ids, paths].transpose().sort { it[0] }
             tuple(group, paired)
         }
-        sample_grouped_exonCounts.view()
         grouped_exonCounts_for_merge = sample_grouped_exonCounts.map { group, samples ->
             def paths = samples.collect { it[1] }
                 tuple(group, paths)
         }
-        grouped_exonCounts_for_merge.view()
         exon_count_merge(grouped_exonCounts_for_merge)
 }
 

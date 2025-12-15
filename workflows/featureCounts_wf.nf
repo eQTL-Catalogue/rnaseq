@@ -25,16 +25,14 @@ workflow count_features {
                 def paired = [sample_ids, paths].transpose().sort { it[0] }
             tuple(group, paired)
         }
-        sample_grouped_featureCounts.view()
         grouped_featureCounts_for_merge = sample_grouped_featureCounts.map { group, samples ->
             def paths = samples.collect { it[1] }
         tuple(group, paths)
         }
-        grouped_featureCounts_for_merge.view()
         merge_featureCounts(grouped_featureCounts_for_merge)
 
     emit:
-        gene_feature_counts = featureCounts.out.gene_feature_counts
+        gene_feature_counts = grouped_featureCounts_for_merge
 }
 
 

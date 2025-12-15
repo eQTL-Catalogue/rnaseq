@@ -110,6 +110,7 @@ include {quant_tx} from './workflows/txQuant_wf'
 include {quant_txrev} from './workflows/txrevQuant_wf'
 include {quant_leafcutter} from './workflows/leafcutter_wf'
 include { createBigWig } from './modules/utils'
+include { majiq } from './workflows/majiq_wf'
 include { generate_mbv } from './workflows/mbv_wf'
 include { sample_correlation } from './modules/utils'
 
@@ -119,8 +120,7 @@ workflow {
     
    if (params.run_ge_quant){
         count_features(align_reads.out.bam_sorted_by_name)
-    }
-    /*  
+    }  
 
     if (params.run_exon_quant) {
         quant_exons(align_reads.out.bam_sorted_by_name)
@@ -137,7 +137,7 @@ workflow {
     if (params.run_leafcutter) {
         quant_leafcutter(align_reads.out.bam_sorted_indexed)
     }
-
+ 
     if (params.generate_bigwig) {
         createBigWig(align_reads.out.bam_sorted_indexed)
     }
@@ -146,10 +146,25 @@ workflow {
         generate_mbv(align_reads.out.bam_sorted_indexed)
     }
 
-    if (params.run_sample_corr && params.run_ge_quant) { 
-        sample_correlation(count_features.out.gene_feature_counts.collect(),
-                            Channel.fromPath("$baseDir/assets/mdsplot_header.txt"),
-                            Channel.fromPath("$baseDir/assets/heatmap_header.txt"))
-    } */
+    if (params.run_majiq){
+        majiq(align_reads.out.bam_sorted_indexed)
+    }
+
+    if (params.run_sample_corr && params.run_ge_quant) {
+        def mds_header_path = file("$baseDir/assets/mdsplot_header.txt")
+        def heatmap_header_path = file("$baseDir/assets/heatmap_header.txt")
+
+        if( !mds_header_path.exists() )
+            exit 1, "Missing header file: $mds_header_path"
+
+        if( !heatmap_header_path.exists() )
+            exit 1, "Missingheatmap header file: $heatmap_header_path"
+
+        mds_header = Channel.value( mds_header_path )
+        heatmap_header = Channel.value( heatmap_header_path )
+
+        sample_correlation(count_features.out.gene_feature_counts, mds_header, heatmap_header)
+    
+    }
 }
 

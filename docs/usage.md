@@ -167,6 +167,54 @@ The following options make this easy:
 
 * `--skip_edger` -             Skip edgeR MDS plot and heatmap
 
+## MAJIQ
+
+MAJIQ-v3 framework is used for detecting, quantifying and comparing alternative splicing events from RNA-seq data.
+
+### `--run_majiq`
+Run the MAJIQ analysis.
+
+### `--has_zarr`
+If set to `true`, the workflow uses the Zarr file specified by `--annt_file_gff_zarr`.  
+If set to `false`, the workflow will automatically generate a Zarr file from the provided GFF3 annotation file.
+
+### `--annt_file_gff_zarr`
+Path to a Zarr file used for efficient multi-dimensional array processing, storage, and I/O.
+
+### `--majiq_license_file`
+Path to the MAJIQ license file required to run MAJIQ.
+
+### `--gff3_annotation_file`
+MAJIQ requires a transcriptome annotation as input and currently supports the GFF3 format.  
+The GFF3 file is used to build an initial model of all annotated splicing changes for each gene.  
+More information about the annotation file can be found in the  
+[MAJIQ documentation](https://majiq.biociphers.org/tools.php).
+
+### `--useDefaultMajiqMinExp`
+If set to `true`, the workflow uses the predefined `majiqMinExp` value.  
+If set to `false`, `majiqMinExp` is set equal to the number of samples in the sample group.
+
+### `--majiqMinExp`
+Threshold for group-level filtering. This specifies either:
+- a fraction (`value < 1`), or
+- an absolute number (`value ≥ 1`)
+
+of experiments passing per-experiment filters (e.g. `--min_reads`, `--min_pos`) that must pass individually for an LSV or junction to be retained.  
+If this value exceeds the total number of experiments in the group, all experiments must pass individually.
+
+---
+
+### MAJIQ junction filters
+
+### `--min_reads`
+Minimum total number of reads required for a junction to pass per-experiment filters for the LSVs it belongs to.  
+If both `--min_reads` and `--min_pos` thresholds are met in a sufficient number of experiments within a group for any junction belonging to an LSV, the LSV is considered admissible and included in the MAJIQ output files for downstream quantification.
+
+### `--min_pos`
+Minimum number of read positions with at least one read required for a junction to pass per-experiment filters.  
+Positions are relative to aligned query sequences, ignoring soft clipping, and excluding a small number of bases at each end.  
+If both `--min_reads` and `--min_pos` thresholds are met in enough experiments for any junction belonging to an LSV, the LSV is considered admissible and per-experiment coverage is saved in the MAJIQ output files for downstream quantification.
+
 
 ## Job Resources
 ### Automatic resubmission

@@ -19,46 +19,46 @@ process gff_to_fasta {
 }
 
 process createBigWig {
-    tag "${bam.simpleName}"
-    publishDir "${params.outdir}/bigwig", mode: 'copy'
+    tag "${sample_id}"
+    publishDir "${params.outdir}/bigwig/${sample_group}", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    tuple file(bam), file(bam_index)
+    tuple val(sample_group), val(sample_id), file(bam), file(bam_index)
 
     output:
-    path "*.bigwig" 
+    tuple val(sample_group), val(sample_id), path("${sample_id}.bigwig")
 
     script:
     """
-    bamCoverage -b $bam -p ${task.cpus} -bs 5 -o ${bam.simpleName}.bigwig
+    bamCoverage -b $bam -p ${task.cpus} -bs 5 -o ${sample_id}.bigwig
     """
 }
 
 process run_mbv {
-    tag "${bam.simpleName}"
-    publishDir "${params.outdir}/MBV", mode: 'copy'
+    tag "${sample_id}"
+    publishDir "${params.outdir}/MBV/${sample_group}", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/qtltools:v22.03.1'
 
     input:
-    tuple file(bam), file(bam_index)
+    tuple val(sample_group), val(sample_id), file(bam), file(bam_index)
     path vcf 
 
     output:
-    path "${bam.simpleName}.mbv_output.txt"
+    tuple val(sample_group), val(sample_id), path("${sample_id}.mbv_output.txt")
 
     script:
     """
-    QTLtools mbv --vcf $vcf --bam $bam --out ${bam.simpleName}.mbv_output.txt
+    QTLtools mbv --vcf $vcf --bam $bam --out ${sample_id}.mbv_output.txt
     """
 }
 
 process sample_correlation {
-    publishDir "${params.outdir}/sample_correlation", mode: 'copy'
+    publishDir "${params.outdir}/sample_correlation/${sample_group}", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    path input_files 
+    tuple val(sample_group), path(input_files)
     path mdsplot_header
     path heatmap_header
 
@@ -67,11 +67,12 @@ process sample_correlation {
 
     script: // This script is bundled with the pipeline, in nfcore/rnaseq/bin/
     """
-    edgeR_heatmap_MDS.r $input_files
-    cat $mdsplot_header edgeR_MDS_Aplot_coordinates_mqc.csv >> tmp_file
-    mv tmp_file edgeR_MDS_Aplot_coordinates_mqc.csv
-    cat $heatmap_header log2CPM_sample_distances_mqc.csv >> tmp_file
-    mv tmp_file log2CPM_sample_distances_mqc.csv
+    edgeR_heatmap_MDS.r ${sample_group} $input_files
+    cat $mdsplot_header edgeR_MDS_Aplot_coordinates_mqc_${sample_group}.csv >> tmp_file
+    mv tmp_file edgeR_MDS_Aplot_coordinates_mqc_${sample_group}.csv
+    cat $heatmap_header log2CPM_sample_distances_mqc_${sample_group}.csv >> tmp_file
+    mv tmp_file log2CPM_sample_distances_mqc_${sample_group}.csv
+    
     """
 }
 
