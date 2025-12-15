@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-Efficiently merge many MAJIQ .psi.tsv files into a DuckDB database (psi.duckdb).
 
-This version:
- - loads each TSV with a fast INSERT ... SELECT
- - still avoids huge UNION ALL SQL
- - uses explicit schema for speed
- - produces table psi_long inside psi.duckdb
-"""
 
 import argparse
 import duckdb
@@ -28,7 +20,6 @@ if len(sample_ids) != len(psi_files):
 
 con = duckdb.connect(db_path)
 
-# Recreate table
 con.execute("DROP TABLE IF EXISTS psi_long")
 con.execute("""
 CREATE TABLE psi_long (
@@ -38,7 +29,6 @@ CREATE TABLE psi_long (
 )
 """)
 
-# Explicit schema for speed + correctness
 schema = """
     delim='\t',
     header=true,
@@ -70,7 +60,6 @@ schema = """
 
 """
 
-# Insert each file
 for sid, path in zip(sample_ids, psi_files):
     abs_path = os.path.abspath(path)
     print(f"Loading sample {sid}: {abs_path}")

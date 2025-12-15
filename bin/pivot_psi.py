@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pivot psi_long table inside DuckDB and output final TSV.gz.
+Pivot psi_long table inside DuckDB and output final *.tsv.gz.
 
 Input:
     --duckdb psi.duckdb
