@@ -24,18 +24,18 @@ process bam_to_junc {
 process cluster_introns {
     container = 'quay.io/eqtlcatalogue/leafcutter:v22.03.p4'
     tag "${junc_files.baseName}"
-    publishDir "${params.outdir}/leafcutter/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/leafcutter", mode: 'copy'
 
     input:
     tuple val(sample_group), path(junc_files)
 
     output:
-    tuple val(sample_group), path("${sample_group}_leafcutter_perind*.gz"), emit: perind_counts
+    tuple val(sample_group), path("leafcutter_perind*.gz"), emit: perind_counts
     path "*_refined"
 
     script:
     """
-    leafcutter_cluster_regtools.py -j $junc_files -m ${params.leafcutter_min_split_reads} -o ${sample_group}_leafcutter -l ${params.leafcutter_max_intron_length} --checkchrom=True
-    zcat ${sample_group}_leafcutter_perind_numers.counts.gz | sed '1s/^/phenotype_id /' | sed -e 's/ /\t/g' | gzip -c > ${sample_group}_leafcutter_perind_numers.counts.formatted.gz
+    leafcutter_cluster_regtools.py -j $junc_files -m ${params.leafcutter_min_split_reads} -o leafcutter -l ${params.leafcutter_max_intron_length} --checkchrom=True
+    zcat leafcutter_perind_numers.counts.gz | sed '1s/^/phenotype_id /' | sed -e 's/ /\t/g' | gzip -c > leafcutter_perind_numers.counts.formatted.gz
     """
 }

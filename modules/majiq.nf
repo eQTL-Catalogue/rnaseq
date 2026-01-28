@@ -20,7 +20,7 @@ process gff2zarr {
 
 process build_junctions {
     tag "${sample_id}"
-    publishDir "${params.outdir}/majiq_juncs/${sample_group}", mode: 'copy', enabled: params.saveMajiqJuncs
+    publishDir "${params.outdir}/${sample_group}/majiq/majiq_juncs", mode: 'copy', enabled: params.saveMajiqJuncs
     container = 'quay.io/eqtlcatalogue/majiq3:v25.10.1'
 
     input:
@@ -134,20 +134,20 @@ process merge_psi {
 
 process pivot_psi {
     tag "${sample_group}"
-    publishDir "${params.outdir}/majiq_quantified_psis/${sample_group}", mode: 'copy', pattern: "*.tsv.gz"
+    publishDir "${params.outdir}/${sample_group}/majiq/majiq_quantified_psis", mode: 'copy', pattern: "*.tsv.gz"
     container = 'quay.io/kfkf33/duckdb_env:v24.01.1'
 
     input:
     tuple val(sample_group), path(db)
 
     output:
-    tuple val(sample_group), path("${sample_group}_majiq_quantified_psis.tsv.gz")
+    tuple val(sample_group), path("majiq_quantified_psis.tsv.gz")
 
     script:
     """
     pivot_psi.py \
         --duckdb ${db} \
-        --output ${sample_group}_majiq_quantified_psis.tsv.gz \
+        --output majiq_quantified_psis.tsv.gz \
         --memory_limit ${task.memory.toMega() / 1024}
     """
 }
@@ -176,7 +176,7 @@ process coverage_for_viz {
 
 process visualise {
     tag "${sample_id}"
-    publishDir "${params.outdir}/majiq_moduliser/${sample_group}", mode: 'copy', enabled: params.saveMajiqModulizedEvents
+    publishDir "${params.outdir}/${sample_group}/majiq/majiq_modulised_events", mode: 'copy', enabled: params.saveMajiqModulizedEvents
     container = 'quay.io/eqtlcatalogue/majiq3:v25.10.1'
 
     input:
@@ -198,7 +198,7 @@ process visualise {
 
 process merge_modulised_events {
     tag "${sample_group}-${event}"
-    publishDir "${params.outdir}/majiq_merged_modulised_events/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/majiq/majiq_merged_modulised_events", mode: 'copy'
     container = "quay.io/kfkf33/polars"
 
     input:
@@ -206,14 +206,14 @@ process merge_modulised_events {
 
     output:
     path "*.tsv"
-    tuple val(sample_group), path("${sample_group}_${event}.tsv")
+    tuple val(sample_group), path("${event}.tsv")
 
     script:
     """
     merge_moduliser_events.py \
         --files ${modulised_event_files.join(' ')} \
         --event $event \
-        --output ${sample_group}_${event}.tsv
+        --output ${event}.tsv
     """
 
 }

@@ -60,23 +60,23 @@ process salmon_quant {
 
 process salmon_merge {
     tag "merge_salmon_${sample_group}_${index}"
-    publishDir "${params.outdir}/Salmon/merged_counts/TPM/${sample_group}", mode: 'copy', pattern: "*.TPM.${sample_group}_merged.tsv.gz"
-    publishDir "${params.outdir}/Salmon/merged_counts/NumReads/${sample_group}", mode: 'copy', pattern: "*.NumReads.${sample_group}_merged.tsv.gz"
+    publishDir "${params.outdir}/${sample_group}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*.TPM.merged.tsv.gz"
+    publishDir "${params.outdir}/${sample_group}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.tsv.gz"
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     tuple val(index), val(sample_group), path(input_files)
 
     output:
-    path "*${sample_group}_merged.tsv.gz"
+    path "*merged.tsv.gz"
 
     script:
     """
-    paste -d"\t" $input_files > ${sample_group}_merged_raw_all.tsv
-    csvtk cut -t -f 1 ${sample_group}_merged_raw_all.tsv | csvtk rename -t -f Name -n phenotype_id > ${sample_group}_phenotype_ids_column.tsv
-    csvtk cut -t -F -f "*_TPM" ${sample_group}_merged_raw_all.tsv | sed 's/_TPM//g' > ${sample_group}_gencode.v39.transcripts.TPM_only.merged.tsv
-    csvtk cut -t -F -f "*_NumReads" ${sample_group}_merged_raw_all.tsv | sed 's/_NumReads//g' > ${sample_group}_gencode.v39.transcripts.NumReads_only.merged.tsv
-    paste -d"\t" ${sample_group}_phenotype_ids_column.tsv ${sample_group}_gencode.v39.transcripts.TPM_only.merged.tsv | gzip -c > ${index}.TPM.${sample_group}_merged.tsv.gz
-    paste -d"\t" ${sample_group}_phenotype_ids_column.tsv ${sample_group}_gencode.v39.transcripts.NumReads_only.merged.tsv | gzip -c > ${index}.NumReads.${sample_group}_merged.tsv.gz
+    paste -d"\t" $input_files > merged_raw_all.tsv
+    csvtk cut -t -f 1 merged_raw_all.tsv | csvtk rename -t -f Name -n phenotype_id > phenotype_ids_column.tsv
+    csvtk cut -t -F -f "*_TPM" merged_raw_all.tsv | sed 's/_TPM//g' > gencode.v39.transcripts.TPM_only.merged.tsv
+    csvtk cut -t -F -f "*_NumReads" merged_raw_all.tsv | sed 's/_NumReads//g' > gencode.v39.transcripts.NumReads_only.merged.tsv
+    paste -d"\t" phenotype_ids_column.tsv gencode.v39.transcripts.TPM_only.merged.tsv | gzip -c > ${index}.TPM.merged.tsv.gz
+    paste -d"\t" phenotype_ids_column.tsv gencode.v39.transcripts.NumReads_only.merged.tsv | gzip -c > ${index}.NumReads.merged.tsv.gz
     """
 }

@@ -20,7 +20,7 @@ process gff_to_fasta {
 
 process createBigWig {
     tag "${sample_id}"
-    publishDir "${params.outdir}/bigwig/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/bigwig", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
@@ -37,7 +37,7 @@ process createBigWig {
 
 process run_mbv {
     tag "${sample_id}"
-    publishDir "${params.outdir}/MBV/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/MBV", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/qtltools:v22.03.1'
 
     input:
@@ -54,7 +54,7 @@ process run_mbv {
 }
 
 process sample_correlation {
-    publishDir "${params.outdir}/sample_correlation/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/sample_correlation", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:

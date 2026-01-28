@@ -38,14 +38,14 @@ process featureCounts {
 
 process merge_featureCounts {
     tag "merge ${sample_group} ${input_files.size()} files"
-    publishDir "${params.outdir}/featureCounts/${sample_group}", mode: 'copy'
+    publishDir "${params.outdir}/${sample_group}/featureCounts", mode: 'copy'
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
     tuple val(sample_group), path(input_files)
 
     output:
-    path "${sample_group}_merged_gene_counts.tsv.gz"
+    path "merged_gene_counts.tsv.gz"
 
     script:
     """
@@ -55,6 +55,6 @@ process merge_featureCounts {
     csvtk rename -t -f Geneid -n phenotype_id > ${sample_group}_phenotype_ids_column.tsv
 
     csvtk cut -t -F -f "*.bam" ${sample_group}_merged_raw_all.tsv | sed 's/.bam//g' > ${sample_group}_merged_genes_no_phenotype_id.tsv
-    paste -d"\t" ${sample_group}_phenotype_ids_column.tsv ${sample_group}_merged_genes_no_phenotype_id.tsv | gzip -c > ${sample_group}_merged_gene_counts.tsv.gz
+    paste -d"\t" ${sample_group}_phenotype_ids_column.tsv ${sample_group}_merged_genes_no_phenotype_id.tsv | gzip -c > merged_gene_counts.tsv.gz
     """
 }
