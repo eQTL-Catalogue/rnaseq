@@ -1,0 +1,7 @@
+sample_group	sample_id	fastq1
+LCL_naive	QTD000110S188028	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188028/ERR188028_1.fastq.gz
+LCL_naive	QTD000110S188035	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188035/ERR188035_1.fastq.gz
+LCL_inf	QTD0001110S188112	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188112/ERR188112_1.fastq.gz
+LCL_inf	QTD0001110S188116	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188116/ERR188116_1.fastq.gz
+LCL_inf	QTD0001110S188036	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188036/ERR188036_1.fastq.gz
+LCL_naive	QTD000110S188040	ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR188/ERR188040/ERR188040_1.fastq.gz

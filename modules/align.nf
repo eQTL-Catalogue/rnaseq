@@ -8,17 +8,17 @@ unstranded = params.unstranded
  * STEP 2 - Trim Galore!
  */
 process trim_galore {
-    tag "$name"
+    tag "$sample_id"
     publishDir "${params.outdir}/trim_galore", mode: 'copy', pattern: "*fq.gz", enabled: params.saveTrimmed
     publishDir "${params.outdir}/trim_galore/logs", mode: 'copy', pattern: "*trimming_report.txt" , enabled: params.saveInfoLogs
     publishDir "${params.outdir}/trim_galore/FastQC", mode: 'copy', pattern: "*_fastqc.{zip,html}"  , enabled: params.saveInfoLogs
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    tuple val(name), file(reads) 
+    tuple val(sample_group),val(sample_id), file(reads) 
 
     output:
-    tuple val(name), file("*fq.gz"), emit: trimmed_reads
+    tuple val(sample_group),val(sample_id), file("*fq.gz"), emit: trimmed_reads
     path "*trimming_report.txt" 
     path "*_fastqc.{zip,html}" 
 
@@ -96,23 +96,24 @@ process makeHISATindex {
 }
 
 process hisat2Align {
-    tag "$samplename"
+    tag "$sample_id"
     publishDir "${params.outdir}/HISAT2/logs/", mode: 'copy', pattern: "*.hisat2_summary.txt", enabled: params.saveInfoLogs
     publishDir "${params.outdir}/HISAT2/aligned/", mode: 'copy', pattern: "*.bam", enabled: params.saveAlignedIntermediates
     container = 'quay.io/eqtlcatalogue/rnaseq_hisat2:v22.03.01'
 
     input:
-    tuple val(samplename), file(reads) 
+    tuple val(sample_group), val(sample_id), file(reads) 
     path hs2_indices
     path alignment_splicesites
 
     output:
-    path "${samplename}.bam", emit: hisat2_bam_ch
-    path "${samplename}.hisat2_summary.txt"
+    //path "${sample_id}.bam", emit: hisat2_bam_ch
+    tuple val(sample_group), val(sample_id), path("${sample_id}.bam") , emit: hisat2_bam_ch
+    path "${sample_id}.hisat2_summary.txt"
 
     script:
     index_base = hs2_indices[0].toString() - ~/.\d.ht2/
-    seqCenter = params.seqCenter ? "--rg-id ${samplename} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
+    seqCenter = params.seqCenter ? "--rg-id ${sample_id} --rg CN:${params.seqCenter.replaceAll('\\s','_')}" : ''
     def rnastrandness = ''
     if (forward_stranded && !unstranded){
         rnastrandness = params.singleEnd ? '--rna-strandness F' : '--rna-strandness FR'
@@ -128,8 +129,8 @@ process hisat2Align {
                 -p ${task.cpus} \\
                 --met-stderr \\
                 --new-summary \\
-                --summary-file ${samplename}.hisat2_summary.txt $seqCenter \\
-                | samtools view -bS -F 4 -F 256 - > ${samplename}.bam
+                --summary-file ${sample_id}.hisat2_summary.txt $seqCenter \\
+                | samtools view -bS -F 4 -F 256 - > ${sample_id}.bam
         """
     } else {
         """
@@ -143,8 +144,8 @@ process hisat2Align {
                 -p ${task.cpus} \\
                 --met-stderr \\
                 --new-summary \\
-                --summary-file ${samplename}.hisat2_summary.txt $seqCenter \\
-                | samtools view -bS -F 4 -F 8 -F 256 - > ${samplename}.bam
+                --summary-file ${sample_id}.hisat2_summary.txt $seqCenter \\
+                | samtools view -bS -F 4 -F 8 -F 256 - > ${sample_id}.bam
         """
     }
 }
@@ -155,10 +156,12 @@ process hisat2_sortOutput {
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    path hisat2_bam
+    //path hisat2_bam
+     tuple val(sample_group), val(sample_id), file(hisat2_bam) 
+
 
     output:
-    tuple file("${hisat2_bam.baseName}.sorted.bam"), file("${hisat2_bam.baseName}.sorted.bam.bai"), emit: bam_sorted_indexed
+    tuple val(sample_group), val(sample_id), file("${sample_id}.sorted.bam"), file("${sample_id}.sorted.bam.bai"), emit: bam_sorted_indexed
 
     script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / task.cpus}" : ''
@@ -166,8 +169,8 @@ process hisat2_sortOutput {
     samtools sort \\
         $hisat2_bam \\
         -@ ${task.cpus} $avail_mem \\
-        -o ${hisat2_bam.baseName}.sorted.bam
-    samtools index ${hisat2_bam.baseName}.sorted.bam
+        -o ${sample_id}.sorted.bam
+    samtools index ${sample_id}.sorted.bam
     """
 }
 
@@ -176,10 +179,10 @@ process sort_by_name_BAM {
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    tuple file(bam), file(bam_index)
+    tuple val(sample_group), val(sample_id), file(bam), file(bam_index)
 
     output:
-    path "${bam.baseName}ByName.bam", emit: bam_sorted_by_name
+    tuple val(sample_group), val(sample_id), path("${bam.baseName}ByName.bam"), emit: bam_sorted_by_name
     
     script:
     def avail_mem = task.memory ? "-m ${task.memory.toBytes() / (task.cpus + 2)}" : ''

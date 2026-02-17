@@ -19,10 +19,20 @@ workflow count_features {
 
     main:
         featureCounts(bam_sorted_by_name, gtf_file.collect(), ch_biotypes_header.collect())
-        merge_featureCounts(featureCounts.out.gene_feature_counts.toSortedList())
+        sample_grouped_featureCounts = featureCounts.out.gene_feature_counts.groupTuple()
+            .map { grouped ->
+                def (group, sample_ids, paths) = grouped
+                def paired = [sample_ids, paths].transpose().sort { it[0] }
+            tuple(group, paired)
+        }
+        grouped_featureCounts_for_merge = sample_grouped_featureCounts.map { group, samples ->
+            def paths = samples.collect { it[1] }
+        tuple(group, paths)
+        }
+        merge_featureCounts(grouped_featureCounts_for_merge)
 
     emit:
-        gene_feature_counts = featureCounts.out.gene_feature_counts
+        gene_feature_counts = grouped_featureCounts_for_merge
 }
 
 

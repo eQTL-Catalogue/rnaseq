@@ -18,7 +18,17 @@ workflow quant_exons {
     main:
         makeDexSeqExonGFF(gtf_file.collect())
         count_exons(bam_sorted_by_name, makeDexSeqExonGFF.out.collect())
-        exon_count_merge(count_exons.out.toSortedList())
+        sample_grouped_exonCounts = count_exons.out.exon_counts.groupTuple()
+            .map { grouped ->
+                def (group, sample_ids, paths) = grouped
+                def paired = [sample_ids, paths].transpose().sort { it[0] }
+            tuple(group, paired)
+        }
+        grouped_exonCounts_for_merge = sample_grouped_exonCounts.map { group, samples ->
+            def paths = samples.collect { it[1] }
+                tuple(group, paths)
+        }
+        exon_count_merge(grouped_exonCounts_for_merge)
 }
 
 

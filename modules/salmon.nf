@@ -18,16 +18,16 @@ process makeSalmonIndex {
 }
 
 process salmon_quant {
-    tag "$samplename - ${index.baseName}"
+    tag "$sample_id - ${index.baseName}"
     publishDir "${params.outdir}/Salmon/quant/${index.baseName}/", mode: 'copy', enabled: params.saveIndividualQuants, pattern: "*.quant.sf"
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    tuple val(samplename), file(reads) 
+    tuple val(sample_group), val(sample_id), path(reads)
     each index 
 
     output:
-    tuple val(index.baseName), file("${samplename}.quant.edited.sf"), emit: salmon_quantified
+    tuple val(index.baseName), val(sample_group), val(sample_id), file("${sample_id}.quant.edited.sf"), emit: salmon_quantified
     path '*.quant.sf'
     
     script:
@@ -40,8 +40,8 @@ process salmon_quant {
                         -r ${reads[0]} \\
                         -p ${task.cpus} \\
                         -o .
-        mv quant.sf ${samplename}.quant.sf
-        cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.quant.edited.sf
+        mv quant.sf ${sample_id}.quant.sf
+        cat ${sample_id}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${sample_id}_TPM/g' | sed '1s/NumReads/${sample_id}_NumReads/g' > ${sample_id}.quant.edited.sf
         """
     } else {
         """
@@ -52,23 +52,23 @@ process salmon_quant {
                         -2 ${reads[1]} \\
                         -p ${task.cpus} \\
                         -o .
-        mv quant.sf ${samplename}.quant.sf
-        cat ${samplename}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${samplename}_TPM/g' | sed '1s/NumReads/${samplename}_NumReads/g' > ${samplename}.quant.edited.sf
+        mv quant.sf ${sample_id}.quant.sf
+        cat ${sample_id}.quant.sf | csvtk cut -t -f "-Length,-EffectiveLength" | sed '1s/TPM/${sample_id}_TPM/g' | sed '1s/NumReads/${sample_id}_NumReads/g' > ${sample_id}.quant.edited.sf
         """
     }
 }
 
 process salmon_merge {
-    tag "merge_salmon_${index}"
-    publishDir "${params.outdir}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*.TPM.merged.tsv.gz"
-    publishDir "${params.outdir}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.tsv.gz"
+    tag "merge_salmon_${sample_group}_${index}"
+    publishDir "${params.outdir}/${sample_group}/Salmon/merged_counts/TPM", mode: 'copy', pattern: "*.TPM.merged.tsv.gz"
+    publishDir "${params.outdir}/${sample_group}/Salmon/merged_counts/NumReads", mode: 'copy', pattern: "*.NumReads.merged.tsv.gz"
     container = 'quay.io/eqtlcatalogue/rnaseq:v20.11.1'
 
     input:
-    tuple val(index), file(input_files) 
+    tuple val(index), val(sample_group), path(input_files)
 
     output:
-    path '*.merged.tsv.gz'
+    path "*merged.tsv.gz"
 
     script:
     """
