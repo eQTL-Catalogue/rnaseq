@@ -14,6 +14,7 @@ module load any/jdk/1.8.0_265
 module load any/singularity/3.5.3
 module load squashfs/4.4
 
-nextflow run bam_to_fastq.nf\
- --bamsPath "/gpfs/space/projects/BLUEPRINT/genotypes/fastq/*/*.cram"\
+nextflow run bam_to_fastq_baseName_ref.nf\
+ --bamsPath "/gpfs/helios/projects/HipSci/MacroMap/crams/*.cram"\
+ --outdir "MacroMap"\
  -resume

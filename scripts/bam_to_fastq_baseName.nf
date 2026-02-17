@@ -3,7 +3,7 @@ nextflow.enable.dsl = 1
 bams = Channel.fromPath(params.bamsPath)
 
 process bam_to_fastq{
-    tag "${bam_file.simpleName}"
+    tag "${bam_file.baseName}"
     publishDir "${params.outdir}/bam_to_fastq_results/", mode: 'copy'
     memory '8 GB'
     cpus 2
@@ -14,13 +14,13 @@ process bam_to_fastq{
     file bam_file from bams
 
     output:
-    file "${bam_file.simpleName}_1.fastq.gz"
-    file "${bam_file.simpleName}_2.fastq.gz"
+    file "${bam_file.baseName}_1.fastq.gz"
+    file "${bam_file.baseName}_2.fastq.gz"
 
     script:
     """
-    samtools collate $bam_file ${bam_file.simpleName}.collated
-    samtools fastq -F 2816 -c 6 -1 ${bam_file.simpleName}_1.fastq.gz -2 ${bam_file.simpleName}_2.fastq.gz ${bam_file.simpleName}.collated.bam
+    samtools collate $bam_file ${bam_file.baseName}.collated
+    samtools fastq -F 2816 -c 6 -1 ${bam_file.baseName}_1.fastq.gz -2 ${bam_file.baseName}_2.fastq.gz ${bam_file.baseName}.collated.bam
     """
 }
 
