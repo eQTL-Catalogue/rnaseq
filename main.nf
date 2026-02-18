@@ -67,11 +67,21 @@ if (params.help){
 }
 
 def build_wf_summary() {
+    // Fetch the pipeline version from Git tags
+    def pipelineVersion = "v0.0.0" // Default version in case git command fails
+
+    // Try to fetch the version from Git
+    try {
+        pipelineVersion = "git describe --tags".execute().text.trim()
+    } catch (Exception e) {
+        log.info "Could not retrieve the pipeline version from Git. Using default version $pipelineVersion."
+    }
     def summary = [:]
     summary['Run Name']   = workflow.runName
-    summary['session_id'] = workflow.sessionId?.toString()
+    summary['Session id'] = workflow.sessionId?.toString()
+    summary['Pipeline Version'] = pipelineVersion
     if (params.dataset_id) summary['Dataset id'] = params.dataset_id
-    summary['ReadPathsFile']        = params.readPathsFile.toString()
+    summary['ReadPathsFile']     = params.readPathsFile.toString()
     //summary['ReadPathsSHA']  = readpaths_sha ToDo: add  sha?
     summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
     summary['Strandedness'] = ( params.unstranded ? 'None' : params.forward_stranded ? 'Forward' : params.reverse_stranded ? 'Reverse' : 'None' )
@@ -100,7 +110,7 @@ def build_wf_summary() {
     summary['Working dir']    = workflow.workDir.toString()
     summary['Script dir']     = workflow.projectDir.toString()
     summary['Config Profile'] = workflow.profile
-    if(workflow.revision) summary['Pipeline Release'] = workflow.revision
+    summary['Container Engine']  = workflow.containerEngine.toString()
     summary['Nextflow_version'] = workflow.nextflow.version.toString()
     summary['Max Memory']     = params.max_memory.toString()
     summary['Max CPUs']       = params.max_cpus.toString()
