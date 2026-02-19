@@ -109,9 +109,12 @@ def build_wf_summary() {
     summary['Output dir']     = params.outdir.toString()
     summary['Working dir']    = workflow.workDir.toString()
     summary['Script dir']     = workflow.projectDir.toString()
+    summary['Pipeline script file path'] = workflow.scriptFile.toString()
+    summary['Pipeline script hash ID'] = workflow.scriptId.toString()
     summary['Config Profile'] = workflow.profile
     summary['Container Engine']  = workflow.containerEngine.toString()
     summary['Nextflow_version'] = workflow.nextflow.version.toString()
+    summary['Nextflow Build'] = workflow.nextflow.build.toString()
     summary['Max Memory']     = params.max_memory.toString()
     summary['Max CPUs']       = params.max_cpus.toString()
     summary['Max Time']       = params.max_time.toString()
@@ -196,7 +199,7 @@ workflow.onComplete {
     wf_summary['error_message']  = workflow.errorMessage?.toString()
     wf_summary['error_report']   = workflow.errorReport?.toString()
 
-    def manifest_file = file("${params.outdir}/pipeline_info/nfcore-rnaseq_run_manifest.json")
+    def manifest_file = file("${params.outdir}/pipeline_info/run_summary.json")
     manifest_file.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(wf_summary))
 
     // save main config
