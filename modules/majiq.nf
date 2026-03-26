@@ -184,14 +184,13 @@ process visualise {
     path majiq_license
 
     output:
-    tuple val(sample_group), path("*_${sample_id}.tsv"), emit: modulised_events
+    tuple val(sample_group), path("*.${sample_id}.tsv"), emit: modulised_events
 
     script:
     """
-    
     voila --license ${majiq_license} modulize -j ${task.cpus} --show-all  --show-per-sample-psi --changing-between-group-dpsi 0.1 --decomplexify-psi-threshold 0.05 --decomplexify-reads-threshold 1 -d . ${sample_group_splicegraph} ${psicov_file} ${sgc_file} --logger modulise_${sample_id}.log
     for f in *.tsv; do
-        mv -- \$f \${f%.tsv}_${sample_id}.tsv
+        mv -- \$f \${f%.tsv}.${sample_id}.tsv
     done
     """
 }

@@ -89,27 +89,10 @@ workflow majiq {
                 files.collect { f ->
                     if (f.name ==~ /.*(summary|other|orphan|heatmap).*/)
                         return null
-                    def event = f.name.replaceFirst(/_[^_]+\.tsv$/, '')
+                    def event = f.name.replaceFirst(/\..*\.tsv$/, '')
                     tuple(sample_group, event, f)
                 }.findAll { it != null }
             }
             .groupTuple(by: [0,1])
         merge_modulised_events(sample_group_events)
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
 }
